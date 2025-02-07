@@ -1,0 +1,48 @@
+name: clear_tool
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.3 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.2
+  flutter_i18n: ^0.36.2
+  flutter_hooks: ^0.20.5
+  photo_manager: ^3.6.4
+  permission_handler: 11.3.1
+  device_info_plus: 8.2.2
+  app_settings: 4.2.0
+  fluttertoast: 8.2.2
+  simple_circular_progress_bar: ^1.0.2
+  path_provider: ^2.1.4
+  system_device_info: ^0.0.2
+  flutter_localizations:
+    sdk: flutter
+  
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^2.0.0
+
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/i18n/en/
+    - assets/i18n/zh/
+    - assets/images/
+    - assets/images/home/
+    - assets/images/tab/
+
+

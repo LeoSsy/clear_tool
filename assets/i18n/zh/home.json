@@ -1,0 +1,11 @@
+{
+    "diskSpace" : "储存空间",
+    "useSpace" : "已使用",
+    "totalSpace" : "共",
+    "smartClear" : "智能清理",
+    "manualClear" : "手动清理",
+    "samePhoto" : "相似图片",
+    "bigPhoto" : "过大图片",
+    "screenshot" : "屏幕截图",
+    "sheet" : "张"
+}

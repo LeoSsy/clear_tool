@@ -1,0 +1,11 @@
+{
+    "home" : "首页",
+    "mine" : "我的",
+    "dialog" : {
+        "title1" : "温馨提示",
+        "confirmTitle1" : "前往设置",
+        "cancleTitle1" : "暂不设置",
+        "permission_denied1" : "无法获取您的相册照片,请前往系统设置中允许友客e家访问您的相册权限",
+        "use_info_photo" : "仅用于从相册中读取照片"
+    }
+}
