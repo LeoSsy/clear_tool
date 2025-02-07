@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class PhotoManagerTool {
@@ -17,7 +18,7 @@ class PhotoManagerTool {
   static filterSamePhotos() async {
     final assetPaths =
         await PhotoManager.getAssetPathList(type: RequestType.image);
-    final photoAssets = [];
+    List<AssetEntity> photoAssets = <AssetEntity>[];
     // 获取所有图片资源对象
     for (var album in assetPaths) {
       final count = await album.assetCountAsync;
@@ -32,6 +33,26 @@ class PhotoManagerTool {
       }
     }
     // 识别相似图片
+    List<AssetEntity> sameAssets = <AssetEntity>[];
+    int currentIndex = 0;
+    int nextIndex = 1;
+    while (currentIndex < photoAssets.length-2) {
+      final currentAssets = photoAssets[currentIndex];
+      final nextAssets = photoAssets[nextIndex];
+      if (currentAssets.duration == nextAssets.duration  && 
+     currentAssets.orientation == nextAssets.orientation && 
+     currentAssets.size.width == nextAssets.size.width && 
+     currentAssets.size.height == nextAssets.size.height && 
+     currentAssets.createDateTime.millisecondsSinceEpoch == nextAssets.createDateTime.millisecondsSinceEpoch && 
+     currentAssets.modifiedDateTime.millisecondsSinceEpoch == nextAssets.modifiedDateTime.millisecondsSinceEpoch
+      ) {
+        sameAssets.add(currentAssets);
+        sameAssets.add(nextAssets);
+
+      }
+      currentIndex++;
+      nextIndex++;
+    }
     print('photoAssets----${photoAssets.length}');
   }
 
