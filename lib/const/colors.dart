@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 class AppColor {
   ///主题色0xff177EF5
-  static const Color mainColor = Color(0xff177EF5);
+  static const Color mainColor = Color(0xff247AF2);
 
   ///主要文字
   static const Color c9c9c9 = Color(0xffC9C9C9);
 
   ///主要文字
-  static const Color textPrimary = Color(0xff333333);
+  static const Color textPrimary = Color(0xff000000);
 
   ///二级标题 252525
   static const Color subTitle252525 = Color(0xff252525);
@@ -35,7 +35,7 @@ class AppColor {
   static const Color textSecondary = Color.fromRGBO(147, 147, 147, 1);
 
   /// 灰色背景 0xffF6F6F6
-  static const Color bgColor = Color(0xffF6F6F6);
+  static const Color bgColor = Color(0xffF9F9F9);
 
   /// 边框颜色
   static const Color borderColor = Color(0xffEAEAEA);

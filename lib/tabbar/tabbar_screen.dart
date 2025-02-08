@@ -1,3 +1,4 @@
+import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/home_screen.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
@@ -143,29 +144,10 @@ class _TabbarScreenState extends State<TabbarScreen> {
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       },
-      child: Container(
-        width: 92,
-        height: 92,
-        alignment: Alignment.center,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xff177EF5),
-                Color(0xff17BDFF),
-              ]),
-          borderRadius: BorderRadius.all(
-            Radius.circular(30),
-          ),
-        ),
-        child: Text(
-          '清理',
-          style: TextStyle(
-            fontSize: 13,
-            color: Theme.of(context).primaryColor,
-          ),
-        ),
+      child: SizedBox(
+        width: 160.autoSize,
+        height: 160.autoSize,
+        child:Image.asset('assets/images/tab/clear_icon.png',width: 100.autoSize,height: 100.autoSize,),
       ),
     );
   }

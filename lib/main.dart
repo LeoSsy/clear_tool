@@ -1,8 +1,34 @@
+import 'dart:async';
+import 'dart:isolate';
 import 'package:clear_tool/const/colors.dart';
+import 'package:clear_tool/event/event_define.dart';
+import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/tabbar/tabbar_screen.dart';
+import 'package:clear_tool/utils/permission_utils.dart';
+import 'package:easy_isolate/easy_isolate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:photo_manager/photo_manager.dart';
+
+
+  StreamController globalStreamControler =   StreamController.broadcast();
+  void mainHandler(dynamic data, SendPort isolateSendPort) {
+    print("--- mainHandler");
+  }
+
+  void isolateHandler(
+      dynamic data, SendPort mainSendPort, SendErrorFunction onSendError) async {
+    // final state = await PhotoManager.requestPermissionExtend();
+    // if (state == PermissionState.denied) {
+    //   PermissionUtils.checkPhotosPermisson();
+    // }else if(state == PermissionState.authorized){
+    //   PhotoManagerTool.filterSamePhotos();
+    //  globalStreamControler.sink.add(SamePhotoEvent());
+    // }
+     PhotoManagerTool.filterSamePhotos();
+     globalStreamControler.sink.add(SamePhotoEvent());
+  }
 
 void main() {
   final FlutterI18nDelegate flutterI18nDelegate = FlutterI18nDelegate(
@@ -18,6 +44,8 @@ void main() {
       print("--- Missing Key: $key, languageCode: ${locale!.languageCode}");
     },
   );
+  final worker =  Worker();
+  worker.init(mainHandler, isolateHandler);
   WidgetsFlutterBinding.ensureInitialized();
   runApp(MyApp(
     flutterI18nDelegate: flutterI18nDelegate,
