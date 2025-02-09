@@ -1,5 +1,6 @@
 import 'package:photo_manager/photo_manager.dart';
 
 class SamePhotoEvent {
-  List<AssetEntity> assets = [];
+  final List<Map<String, dynamic>> assets;
+  SamePhotoEvent(this.assets);
 }

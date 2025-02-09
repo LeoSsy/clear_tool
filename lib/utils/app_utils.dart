@@ -1,10 +1,9 @@
-
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 
 class AppUtils {
-
   /// context
   static BuildContext? context;
 
@@ -21,12 +20,17 @@ class AppUtils {
   static EdgeInsets safeAreapadding = EdgeInsets.zero;
 
   /// i18转换
-  static String i18Translate(String key){
+  static String i18Translate(String key) {
     if (context == null || !context!.mounted) {
       return '';
     }
     return FlutterI18n.translate(context!, key);
   }
-  
-}
 
+  /// 文件大小格式化
+  static String fileSizeFormat(int size) {
+    final unit = ['B', 'KB', 'MB', 'GB'];
+    final tp = (log(size) / log(1024)).floor();
+    return '${(size / pow(1024, tp)).toStringAsFixed(2)}${unit[tp.toInt()]}';
+  }
+}
