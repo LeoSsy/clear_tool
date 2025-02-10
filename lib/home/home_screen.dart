@@ -45,6 +45,21 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 相似照片容量
   String samePhotoSize = '';
 
+  /// 屏幕截图合集
+  List<AssetEntity> screenPhotos = [];
+
+  /// 屏幕截图照片容量
+  String screenPhotoSize = '';
+
+  /// 大图合集
+  List<AssetEntity> bigPhotos = [];
+
+  /// 处理大图标记
+  bool isBigProcessing = false;
+
+  /// 大图照片容量
+  String bigPhotoSize = '';
+
   Color color = Colors.red;
   // late Worker worker;
   late StreamSubscription _streamSubscription;
@@ -66,7 +81,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void getScreenshots() async {
     _streamSubscription = globalStreamControler.stream.listen((event) async {
-      if (event is SamePhotoEvent) {
+      if (event is AllPhotoLoadFinishEvent) {
+        // 开启子线程检测数据
+        FlutterIsolate.spawn(spawnSamePhotosIsolate, globalPort.sendPort);
+        FlutterIsolate.spawn(spawnScreenshotIsolate, globalPort.sendPort);
+        FlutterIsolate.spawn(spawnBigPhotosIsolate, globalPort.sendPort);
+      } else if (event is SamePhotoEvent) {
         int sumSize = 0;
         for (var map in event.assets) {
           // 查找是否存在重复的图片
@@ -83,18 +103,64 @@ class _HomeScreenState extends State<HomeScreen> {
           samePhotos.add(IsolateAssetMessage.fromJson(map));
         }
         PhotoManagerTool.sameImageEntity = samePhotos;
-        samePhotoSize = formatData(sumSize);
+        samePhotoSize = AppUtils.fileSizeFormat(sumSize);
+        setState(() {});
+      } else if (event is ScreenPhotoEvent) {
+        // 获取所有图片id集合
+        final ids = event.assetsIds;
+        // final screenList = PhotoManagerTool.allPhotoAssetsIdMaps.keys.where((id) => ids.contains(id));
+        final screenList = <AssetEntity>[];
+        int sumSize = 0;
+        for (var id in ids) {
+          if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(id)) {
+            final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[id]!;
+            final file = await assetEntity.originFile;
+            if (file != null) {
+              final length = await file.length();
+              sumSize += length;
+            }
+            screenList.add(PhotoManagerTool.allPhotoAssetsIdMaps[id]!);
+          }
+        }
+        PhotoManagerTool.screenShotOrigineEntity = screenList;
+        setState(() {
+          screenPhotoSize = AppUtils.fileSizeFormat(sumSize);
+          screenPhotos = screenList;
+        });
+      } else if (event is BigPhotoEvent) {
+        // 获取所有图片id集合
+        final newAssetList = <AssetEntity>[];
+        if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(event.id)) {
+          final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
+          newAssetList.add(assetEntity);
+        } else {
+          PhotoManagerTool.allPhotoAssetsIdMaps[event.id] = PhotoManagerTool
+              .allPhotoAssets
+              .where((el) => el.id == event.id)
+              .toList()
+              .first;
+          newAssetList.add(PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!);
+        }
+        int sumSize = 0;
+        isBigProcessing = true;
+        for (var asset in newAssetList) {
+          final file = await asset.originFile;
+          if (file != null) {
+            final length = await file.length();
+            sumSize += length;
+          }
+        }
+        bigPhotos.addAll(newAssetList);
+        isBigProcessing = false;
+        PhotoManagerTool.bigImageEntity = bigPhotos;
+        setState(() {
+          PhotoManagerTool.bigSumSize = sumSize;
+          bigPhotoSize = AppUtils.fileSizeFormat(sumSize);
+        });
+      } else if (event is RefreshEvent) {
         setState(() {});
       }
     });
-    // FlutterIsolate.spawn<Map<String, dynamic>>(
-    //     _HomeScreenState.backgroundFetchSamePhotos, {});
-
-    // samePhotos = await PhotoManagerTool.filterSamePhotos();
-    // setState(() {});
-    // final number = await PhotoManager.getAssetCount();
-    // screenshots = await PhotoManagerTool.fetchScreenShots();
-    // setState(() {});
   }
 
   void changeLanguage() async {
@@ -111,11 +177,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void getDiskInfo() async {
     final tz = await SystemDeviceInfo.totalSize();
     if (tz != null) {
-      totalSize = formatData(tz);
+      totalSize = AppUtils.fileSizeFormat(tz);
     }
     final fz = await SystemDeviceInfo.freeSize();
     if (fz != null) {
-      useSize = formatData(tz! - fz);
+      useSize = AppUtils.fileSizeFormat(tz! - fz);
       final value = ((tz - fz) / tz) * 100;
       valueNotifier.value = value;
       if (value > 90) {
@@ -139,15 +205,9 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
-  String formatData(int size) {
-    final unit = ['B', 'KB', 'MB', 'GB'];
-    final tp = (log(size) / log(1024)).floor();
-    return '${(size / pow(1024, tp)).toStringAsFixed(2)}${unit[tp.toInt()]}';
-  }
-
   @override
   Widget build(BuildContext context) {
-    AppUtils.context = context;
+    AppUtils.globalContext = context;
     return Scaffold(
       backgroundColor: const Color(0xffF9F9F9),
       body: Padding(
@@ -159,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 _buildCircleProgressBar(),
                 Text(
-                  AppUtils.i18Translate("home.manualClear"),
+                  AppUtils.i18Translate("home.manualClear", context: context),
                   style: const TextStyle(
                     fontSize: 16.5,
                     color: AppColor.textPrimary,
@@ -168,16 +228,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 8),
                 _buidManualItem(context),
               ],
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              sliver: SliverGrid.builder(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 4,
+                  mainAxisSpacing: 5,
+                  crossAxisSpacing: 5,
+                ),
+                itemCount: hashs.keys.toList().length,
+                itemBuilder: (context, index) {
+                  final assets = hashs.values.toList()[index];
+                  return Stack(
+                    children: [
+                      ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: Image.file(
+                            File(assets),
+                            fit: BoxFit.cover,
+                          )),
+                    ],
+                  );
+                },
+              ),
             )
           ],
         ),
       ),
     );
-  }
-
-  Future<Uint8List?> _loadImage(AssetEntity asset) async {
-    final imgW = AppUtils.screenW / 2;
-    return await asset.originBytes;
   }
 
   Row _buidManualItem(BuildContext context) {
@@ -210,7 +289,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: EdgeInsets.all(8.autoSize!),
                     child: Text(
-                      AppUtils.i18Translate("home.samePhoto"),
+                      AppUtils.i18Translate("home.samePhoto", context: context),
                       style: TextStyle(
                         fontSize: 13.autoSize,
                         color: AppColor.textPrimary,
@@ -236,14 +315,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${samePhotos.length}${AppUtils.i18Translate('home.sheet')}',
+                              '${samePhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
                               style: TextStyle(
                                 fontSize: 8.autoSize,
                                 color: const Color(0xff5E1FB2),
                               ),
                             ),
                             Text(
-                              samePhotoSize,
+                              samePhotoSize.isNotEmpty ? samePhotoSize : '0KB',
                               style: TextStyle(
                                 fontSize: 8.autoSize,
                                 color: const Color(0xff5E1FB2),
@@ -294,7 +373,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: EdgeInsets.all(8.autoSize!),
                     child: Text(
-                      AppUtils.i18Translate("home.bigPhoto"),
+                      AppUtils.i18Translate("home.bigPhoto", context: context),
                       style: TextStyle(
                         fontSize: 13.autoSize,
                         color: AppColor.textPrimary,
@@ -320,14 +399,14 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '0${AppUtils.i18Translate('home.sheet')}',
+                              '${PhotoManagerTool.bigImageEntity.length}${AppUtils.i18Translate('home.sheet', context: context)}',
                               style: TextStyle(
                                 fontSize: 8.autoSize!,
                                 color: const Color(0xff1C6EAA),
                               ),
                             ),
                             Text(
-                              '0.00KB',
+                              bigPhotoSize.isNotEmpty ? bigPhotoSize : '0KB',
                               style: TextStyle(
                                 fontSize: 8.autoSize!,
                                 color: const Color(0xff1C6EAA),
@@ -378,7 +457,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   Padding(
                     padding: EdgeInsets.all(8.autoSize!),
                     child: Text(
-                      AppUtils.i18Translate("home.screenshot"),
+                      AppUtils.i18Translate("home.screenshot",
+                          context: context),
                       style: TextStyle(
                         fontSize: 13.autoSize,
                         color: AppColor.textPrimary,
@@ -404,14 +484,16 @@ class _HomeScreenState extends State<HomeScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '0${AppUtils.i18Translate('home.sheet')}',
+                              '${screenPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
                               style: TextStyle(
                                 fontSize: 8.autoSize!,
                                 color: const Color(0xff1B5FC4),
                               ),
                             ),
                             Text(
-                              '0.00KB',
+                              screenPhotoSize.isNotEmpty
+                                  ? screenPhotoSize
+                                  : '0KB',
                               style: TextStyle(
                                 fontSize: 8.autoSize!,
                                 color: const Color(0xff1B5FC4),
@@ -454,6 +536,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$deviceName${AppUtils.i18Translate("home.diskSpace")}',

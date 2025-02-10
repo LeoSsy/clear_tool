@@ -13,10 +13,10 @@ class PermissionUtils {
   static Future<bool> checkPhotosPermisson({String? permisinUsingInfo}) async {
     bool? isPoped;
     var navigator;
-    if (AppUtils.context != null) {
+    if (AppUtils.globalContext != null) {
       isPoped = false;
-      navigator = Navigator.of(AppUtils.context!);
-      AppDialog.showPermissionHintDialog(AppUtils.context,
+      navigator = Navigator.of(AppUtils.globalContext!);
+      AppDialog.showPermissionHintDialog(AppUtils.globalContext,
               desc: permisinUsingInfo ?? AppUtils.i18Translate("common.dialog.use_info_photo"))
           .then((value) {
         if (value != null) {
@@ -105,10 +105,10 @@ class PermissionUtils {
   static Future<bool> checkCameraPermisson({String? permisinUsingInfo}) async {
     bool? isPoped;
     var navigator;
-    if (AppUtils.context != null) {
+    if (AppUtils.globalContext != null) {
       isPoped = false;
-      navigator = Navigator.of(AppUtils.context!);
-      AppDialog.showPermissionHintDialog(AppUtils.context!,
+      navigator = Navigator.of(AppUtils.globalContext!);
+      AppDialog.showPermissionHintDialog(AppUtils.globalContext!,
               desc: permisinUsingInfo ?? '仅用于拍照')
           .then((value) {
         if (value != null) {
@@ -150,10 +150,10 @@ class PermissionUtils {
   static Future<bool> checkStoragePermisson({String? permisinUsingInfo}) async {
     bool? isPoped;
     var navigator;
-    if (AppUtils.context != null) {
+    if (AppUtils.globalContext != null) {
       isPoped = false;
-      navigator = Navigator.of(AppUtils.context!);
-      AppDialog.showPermissionHintDialog(AppUtils.context!,
+      navigator = Navigator.of(AppUtils.globalContext!);
+      AppDialog.showPermissionHintDialog(AppUtils.globalContext!,
               desc: permisinUsingInfo ?? '仅用于保存文件到手机')
           .then((value) {
         if (value != null) {
@@ -308,11 +308,11 @@ class PermissionUtils {
     bool permisionResult = false;
     var navigator;
     bool? isPoped;
-    navigator = Navigator.of(AppUtils.context!);
+    navigator = Navigator.of(AppUtils.globalContext!);
     if (permisinUsingInfo != null &&
-        AppUtils.context != null) {
+        AppUtils.globalContext != null) {
       isPoped = false;
-      AppDialog.showPermissionHintDialog(AppUtils.context!,
+      AppDialog.showPermissionHintDialog(AppUtils.globalContext!,
               desc: permisinUsingInfo)
           .then((value) {
         if (value != null) {
@@ -354,7 +354,7 @@ class PermissionUtils {
 
   /// 相册权限被拒绝弹框
   static Future _showPhotoAlbumDeniedDialog() async {
-    if (AppUtils.context != null) {
+    if (AppUtils.globalContext != null) {
       if (Platform.isAndroid) {
         _showPermissionDeniedDialog(AppUtils.i18Translate('common.dialog.permission_denied1'));
       } else {
@@ -365,9 +365,9 @@ class PermissionUtils {
 
   /// 权限被拒绝弹框
   static Future<bool> _showPermissionDeniedDialog(String desc) async {
-    if (AppUtils.context != null) {
+    if (AppUtils.globalContext != null) {
       final res = await AppDialog.showConfirmDialog(
-        AppUtils.context!,
+        AppUtils.globalContext!,
         title: AppUtils.i18Translate('common.dialog.title1'),
         desc: desc,
         confirmTitle: AppUtils.i18Translate('common.dialog.confirmTitle1'),
@@ -383,14 +383,14 @@ class PermissionUtils {
 
   /// 相机权限被拒绝弹框
   static Future _showPhotoCameraDeniedDialog() async {
-    if (AppUtils.context != null) {
+    if (AppUtils.globalContext != null) {
       _showPermissionDeniedDialog("无法访问您的相机,请前往系统设置中允许友客e家访问您的手机相机权限");
     }
   }
 
   /// 存储权限被拒绝弹框
   static Future _showStorageDeniedDialog() async {
-    if (AppUtils.context != null) {
+    if (AppUtils.globalContext != null) {
       if (Platform.isAndroid) {
         _showPermissionDeniedDialog(AppUtils.i18Translate('common.dialog.permission_denied1'));
       } else {
@@ -401,9 +401,9 @@ class PermissionUtils {
 
   /// 通知权限被拒绝弹框
   static Future<bool> _showNotificationDeniedDialog() async {
-    if (AppUtils.context != null) {
+    if (AppUtils.globalContext != null) {
       final res = await AppDialog.showConfirmDialog(
-        AppUtils.context!,
+        AppUtils.globalContext!,
         title: "温馨提示",
         desc: "当前无通知权限，为了及时获取房源动态和报备状态，是否前往设置允许友客e家为您发送通知",
         confirmTitle: '前往设置',

@@ -57,7 +57,7 @@ class _TabbarScreenState extends State<TabbarScreen> {
 
   @override
   Widget build(BuildContext context) {
-    AppUtils.context = context;
+    AppUtils.globalContext = context;
     return Scaffold(
       body: PageView(
         controller: pageController,

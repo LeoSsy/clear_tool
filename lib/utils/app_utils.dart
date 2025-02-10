@@ -1,11 +1,13 @@
+import 'dart:io';
 import 'dart:math';
 
+import 'package:clear_tool/widget/image_preview_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 
 class AppUtils {
   /// context
-  static BuildContext? context;
+  static BuildContext? globalContext;
 
   /// 屏幕逻辑像素比
   static double pixelRatio = 2;
@@ -20,11 +22,15 @@ class AppUtils {
   static EdgeInsets safeAreapadding = EdgeInsets.zero;
 
   /// i18转换
-  static String i18Translate(String key) {
-    if (context == null || !context!.mounted) {
-      return '';
+  static String i18Translate(String key, {BuildContext? context}) {
+    if (context != null) {
+      return FlutterI18n.translate(context, key);
+    } else {
+      if (globalContext == null || !globalContext!.mounted) {
+        return '';
+      }
+      return FlutterI18n.translate(globalContext!, key);
     }
-    return FlutterI18n.translate(context!, key);
   }
 
   /// 文件大小格式化
@@ -32,5 +38,58 @@ class AppUtils {
     final unit = ['B', 'KB', 'MB', 'GB'];
     final tp = (log(size) / log(1024)).floor();
     return '${(size / pow(1024, tp)).toStringAsFixed(2)}${unit[tp.toInt()]}';
+  }
+
+  /// 预览图片
+  /// [images]  图片数组 可以传入类型如下：List<File> 、List<dynamic>? 、 dynamic 、 List<dynamic>
+  ///  图片数组内部元素可以是： 网络地址、本地文件地址、本地项目图片资源地址
+  static showImagePreviewDialog(BuildContext context, dynamic images,
+      [int index = 0]) {
+    if (images == null) return;
+    List<String> imgs = [];
+    if (images is List<File>) {
+      for (var element in images) {
+        imgs.add(element.path);
+      }
+    } else if (images is List<dynamic>) {
+      for (dynamic element in images) {
+        if (element is File) {
+          imgs.add(element.path);
+        } else if (element is String) {
+          imgs.add(element);
+        }
+      }
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierColor: Colors.black,
+      builder: (BuildContext context) {
+        return Material(
+          color: Colors.black,
+          child: Stack(
+            children: [
+              ImagePreviewWidget(
+                images: imgs,
+                index: index,
+              ),
+              Positioned(
+                right: 12,
+                top: 30,
+                child: IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

@@ -1,24 +1,29 @@
 import 'dart:async';
-import 'dart:io';
-import 'dart:math';
-
 import 'package:clear_tool/const/const.dart';
-import 'package:clear_tool/event/event_define.dart';
-import 'package:clear_tool/main.dart';
-import 'package:exif/exif.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:image_compare_2/image_compare_2.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:image/image.dart' as img;
 
 class PhotoManagerTool {
+
+  /// 保存所有图片资源对象
+  static List<AssetEntity> allPhotoAssets = <AssetEntity>[];
+  /// id 映射到图片资源对象
+  static Map<String,AssetEntity> allPhotoAssetsIdMaps = {};
+
   /// 保存已加载的大图
   static List<AssetEntity> bigImageEntity = [];
+  /// 保存大图容量
+  static int bigSumSize = 0;
 
   /// 保存相似图片
   static List<IsolateAssetMessage> sameImageEntity = [];
+
+  /// 保存屏幕截图原始图片
+  static List<AssetEntity> screenShotOrigineEntity = [];
+  /// 保存屏幕截图图片
+  static List<ImageAsset> screenShotImageEntity = [];
+
+  /// 是否加载相似图片中
+  static bool isLoadingSamePhotos = true;
 
   /// 获取所有图片数量
   static Future<int> getPhotoCount() async {

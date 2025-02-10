@@ -7,5 +7,14 @@
     "samePhoto" : "相似图片",
     "bigPhoto" : "过大图片",
     "screenshot" : "屏幕截图",
-    "sheet" : "张"
+    "sheet" : "张",
+    "recognition" : "检测中",
+    "aImage" : "张图片",
+    "oversizedImage" : "过大图片",
+    "selected" : "已选择",
+    "selectedAll" : "全选",
+    "unSelectedAll" : "取消全选",
+    "zip" : "压缩",
+    "image" : "图片",
+    "deniedPhotoPermission" : "暂无相册访问权限，是否前往开启？"
 }
