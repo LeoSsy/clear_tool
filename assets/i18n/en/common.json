@@ -1,6 +1,7 @@
 {
     "home" : "Home",
     "mine" : "Mine",
+    "noData" : "no data",
     "dialog" : {
         "title1" : "Hint",
         "confirmTitle1" : "go to",

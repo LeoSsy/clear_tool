@@ -6,6 +6,7 @@ import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/big_image/big_image_page.dart';
+import 'package:clear_tool/home/clear_page/clear_page.dart';
 import 'package:clear_tool/home/same_image/same_image_page.dart';
 import 'package:clear_tool/home/screen_shot/screen_shot_page.dart';
 import 'package:clear_tool/home/widget/circle_progress.dart';
@@ -20,6 +21,7 @@ import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:image_compare_2/image_compare_2.dart';
 import 'package:images_picker/images_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
+import 'package:simple_circular_progress_bar/simple_circular_progress_bar.dart';
 import 'package:system_device_info/system_device_info.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -46,13 +48,13 @@ class _HomeScreenState extends State<HomeScreen> {
   String samePhotoSize = '';
 
   /// 屏幕截图合集
-  List<AssetEntity> screenPhotos = [];
+  List<ImageAsset> screenPhotos = [];
 
   /// 屏幕截图照片容量
   String screenPhotoSize = '';
 
   /// 大图合集
-  List<AssetEntity> bigPhotos = [];
+  List<ImageAsset> bigPhotos = [];
 
   /// 处理大图标记
   bool isBigProcessing = false;
@@ -60,14 +62,25 @@ class _HomeScreenState extends State<HomeScreen> {
   /// 大图照片容量
   String bigPhotoSize = '';
 
+  /// 进度圆颜色
   Color color = Colors.red;
-  // late Worker worker;
+
+  /// 进度圆背景图片
+  String progressBgImage = 'assets/images/home/blue_progress_bg.png';
+
+  /// 订阅事件
   late StreamSubscription _streamSubscription;
+
+  /// 开启定时器 检查存储空间
+  late Timer diskTimer;
 
   @override
   void initState() {
     super.initState();
     // worker = Worker();
+    diskTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      getDiskInfo();
+    });
     changeLanguage();
     getDiskInfo();
     getScreenshots();
@@ -76,6 +89,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void dispose() {
     _streamSubscription.cancel();
+    diskTimer.cancel();
     super.dispose();
   }
 
@@ -84,8 +98,10 @@ class _HomeScreenState extends State<HomeScreen> {
       if (event is AllPhotoLoadFinishEvent) {
         // 开启子线程检测数据
         FlutterIsolate.spawn(spawnSamePhotosIsolate, globalPort.sendPort);
-        FlutterIsolate.spawn(spawnScreenshotIsolate, globalPort.sendPort);
-        FlutterIsolate.spawn(spawnBigPhotosIsolate, globalPort.sendPort);
+        screenshotPhotoIsolate = await FlutterIsolate.spawn(
+            spawnScreenshotIsolate, globalPort.sendPort);
+        bigPhotoIsolate = await FlutterIsolate.spawn(
+            spawnBigPhotosIsolate, globalPort.sendPort);
       } else if (event is SamePhotoEvent) {
         int sumSize = 0;
         for (var map in event.assets) {
@@ -107,56 +123,84 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {});
       } else if (event is ScreenPhotoEvent) {
         // 获取所有图片id集合
-        final ids = event.assetsIds;
-        // final screenList = PhotoManagerTool.allPhotoAssetsIdMaps.keys.where((id) => ids.contains(id));
-        final screenList = <AssetEntity>[];
-        int sumSize = 0;
-        for (var id in ids) {
-          if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(id)) {
-            final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[id]!;
-            final file = await assetEntity.originFile;
-            if (file != null) {
-              final length = await file.length();
-              sumSize += length;
-            }
-            screenList.add(PhotoManagerTool.allPhotoAssetsIdMaps[id]!);
-          }
-        }
-        PhotoManagerTool.screenShotOrigineEntity = screenList;
-        setState(() {
-          screenPhotoSize = AppUtils.fileSizeFormat(sumSize);
-          screenPhotos = screenList;
-        });
-      } else if (event is BigPhotoEvent) {
-        // 获取所有图片id集合
-        final newAssetList = <AssetEntity>[];
+        final newAssetList = <ImageAsset>[];
         if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(event.id)) {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
-          newAssetList.add(assetEntity);
+          final file = await assetEntity.originFile;
+          if (file != null) {
+            final thumbnailData = await assetEntity.thumbnailData;
+            newAssetList.add(ImageAsset(assetEntity)
+              ..originalFilePath = file.path
+              ..thumnailBytes = thumbnailData);
+          }
         } else {
           PhotoManagerTool.allPhotoAssetsIdMaps[event.id] = PhotoManagerTool
               .allPhotoAssets
               .where((el) => el.id == event.id)
               .toList()
               .first;
-          newAssetList.add(PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!);
+          final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
+          final file = await assetEntity.originFile;
+          if (file != null) {
+            final thumbnailData = await assetEntity.thumbnailData;
+            newAssetList.add(ImageAsset(assetEntity)
+              ..originalFilePath = file.path
+              ..thumnailBytes = thumbnailData);
+          }
+        }
+        screenPhotos.addAll(newAssetList);
+        PhotoManagerTool.screenShotImageEntity = screenPhotos;
+        setState(() {
+          screenPhotoSize = AppUtils.fileSizeFormat(event.totalSize);
+        });
+
+        /// 发送二级页面事件
+        globalStreamControler
+            .add(SubScreenPhotoEvent(screenPhotos, event.totalSize));
+      } else if (event is BigPhotoEvent) {
+        // 获取所有图片id集合
+        final newAssetList = <ImageAsset>[];
+        if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(event.id)) {
+          final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
+          final file = await assetEntity.originFile;
+          if (file != null) {
+            final thumbnailData = await assetEntity.thumbnailData;
+            newAssetList.add(ImageAsset(assetEntity)
+              ..originalFilePath = file.path
+              ..thumnailBytes = thumbnailData);
+          }
+        } else {
+          PhotoManagerTool.allPhotoAssetsIdMaps[event.id] = PhotoManagerTool
+              .allPhotoAssets
+              .where((el) => el.id == event.id)
+              .toList()
+              .first;
+          final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
+          final file = await assetEntity.originFile;
+          if (file != null) {
+            final thumbnailData = await assetEntity.thumbnailData;
+            newAssetList.add(ImageAsset(assetEntity)
+              ..originalFilePath = file.path
+              ..thumnailBytes = thumbnailData);
+          }
         }
         int sumSize = 0;
-        isBigProcessing = true;
         for (var asset in newAssetList) {
-          final file = await asset.originFile;
-          if (file != null) {
-            final length = await file.length();
+          final originalFilePath = asset.originalFilePath;
+          if (originalFilePath != null) {
+            final length = await File(originalFilePath).length();
             sumSize += length;
           }
         }
         bigPhotos.addAll(newAssetList);
-        isBigProcessing = false;
         PhotoManagerTool.bigImageEntity = bigPhotos;
         setState(() {
-          PhotoManagerTool.bigSumSize = sumSize;
-          bigPhotoSize = AppUtils.fileSizeFormat(sumSize);
+          PhotoManagerTool.bigSumSize += sumSize;
+          bigPhotoSize = AppUtils.fileSizeFormat(PhotoManagerTool.bigSumSize);
         });
+
+        /// 发送二级页面事件
+        globalStreamControler.add(SubBigPhotoEvent(bigPhotos, sumSize));
       } else if (event is RefreshEvent) {
         setState(() {});
       }
@@ -186,12 +230,16 @@ class _HomeScreenState extends State<HomeScreen> {
       valueNotifier.value = value;
       if (value > 90) {
         color = AppColor.red;
+        progressBgImage = 'assets/images/home/red_progress_bg.png';
       } else if (value > 70) {
         color = Colors.orange;
+        progressBgImage = 'assets/images/home/orange_progress_bg.png';
       } else if (value > 30) {
         color = AppColor.yellow;
+        progressBgImage = 'assets/images/home/yellow_progress_bg.png';
       } else {
         color = AppColor.mainColor;
+        progressBgImage = 'assets/images/home/blue_progress_bg.png';
       }
     }
 
@@ -210,331 +258,342 @@ class _HomeScreenState extends State<HomeScreen> {
     AppUtils.globalContext = context;
     return Scaffold(
       backgroundColor: const Color(0xffF9F9F9),
-      body: Padding(
-        padding: EdgeInsets.only(
-            top: MediaQuery.of(context).padding.top, left: 12, right: 12),
-        child: CustomScrollView(
-          slivers: [
-            SliverList.list(
-              children: [
-                _buildCircleProgressBar(),
-                Text(
+      body: CustomScrollView(
+        slivers: [
+          SliverList.list(
+            children: [
+              _buildCircleProgressBar(),
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
                   AppUtils.i18Translate("home.manualClear", context: context),
                   style: const TextStyle(
                     fontSize: 16.5,
                     color: AppColor.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 8),
-                _buidManualItem(context),
-              ],
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              sliver: SliverGrid.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4,
-                  mainAxisSpacing: 5,
-                  crossAxisSpacing: 5,
-                ),
-                itemCount: hashs.keys.toList().length,
-                itemBuilder: (context, index) {
-                  final assets = hashs.values.toList()[index];
-                  return Stack(
-                    children: [
-                      ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: Image.file(
-                            File(assets),
-                            fit: BoxFit.cover,
-                          )),
-                    ],
-                  );
-                },
               ),
-            )
-          ],
-        ),
+              const SizedBox(height: 8),
+              _buidManualItem(context),
+            ],
+          ),
+          // SliverPadding(
+          //   padding: const EdgeInsets.symmetric(horizontal: 12),
+          //   sliver: SliverGrid.builder(
+          //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          //       crossAxisCount: 4,
+          //       mainAxisSpacing: 5,
+          //       crossAxisSpacing: 5,
+          //     ),
+          //     itemCount: hashs.keys.toList().length,
+          //     itemBuilder: (context, index) {
+          //       final assets = hashs.values.toList()[index];
+          //       return Stack(
+          //         children: [
+          //           ClipRRect(
+          //               borderRadius: BorderRadius.circular(4),
+          //               child: Image.file(
+          //                 File(assets),
+          //                 fit: BoxFit.cover,
+          //               )),
+          //         ],
+          //       );
+          //     },
+          //   ),
+          // )
+        ],
       ),
     );
   }
 
-  Row _buidManualItem(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const SameImagePage()),
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    offset: const Offset(0, 1),
-                    blurRadius: 5.5,
-                    color: const Color(0xffD6D6D6).withOpacity(0.5),
-                  )
-                ],
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: 14.autoSize),
-                  Image.asset('assets/images/home/same_icon.png'),
-                  Padding(
-                    padding: EdgeInsets.all(8.autoSize!),
-                    child: Text(
-                      AppUtils.i18Translate("home.samePhoto", context: context),
-                      style: TextStyle(
-                        fontSize: 13.autoSize,
-                        color: AppColor.textPrimary,
+  Widget _buidManualItem(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      child: Row(
+        children: [
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) => const SameImagePage()),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      offset: const Offset(0, 1),
+                      blurRadius: 5.5,
+                      color: const Color(0xffD6D6D6).withOpacity(0.5),
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    SizedBox(height: 14.autoSize),
+                    Image.asset('assets/images/home/same_icon.png'),
+                    Padding(
+                      padding: EdgeInsets.all(8.autoSize!),
+                      child: Text(
+                        AppUtils.i18Translate("home.samePhoto",
+                            context: context),
+                        style: TextStyle(
+                          fontSize: 13.autoSize,
+                          color: AppColor.textPrimary,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 7.autoSize),
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color: const Color(0xffDAE8FD),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.autoSize!,
-                      vertical: 2.autoSize!,
-                    ),
-                    width: double.infinity,
-                    margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
-                    height: 27.autoSize,
-                    child: Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${samePhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
-                              style: TextStyle(
-                                fontSize: 8.autoSize,
-                                color: const Color(0xff5E1FB2),
+                    SizedBox(height: 7.autoSize),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: const Color(0xffDAE8FD),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.autoSize!,
+                        vertical: 2.autoSize!,
+                      ),
+                      width: double.infinity,
+                      margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
+                      height: 27.autoSize,
+                      child: Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${samePhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                style: TextStyle(
+                                  fontSize: 8.autoSize,
+                                  color: const Color(0xff5E1FB2),
+                                ),
                               ),
-                            ),
-                            Text(
-                              samePhotoSize.isNotEmpty ? samePhotoSize : '0KB',
-                              style: TextStyle(
-                                fontSize: 8.autoSize,
-                                color: const Color(0xff5E1FB2),
+                              Text(
+                                samePhotoSize.isNotEmpty
+                                    ? samePhotoSize
+                                    : '0KB',
+                                style: TextStyle(
+                                  fontSize: 8.autoSize,
+                                  color: const Color(0xff5E1FB2),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 6.autoSize,
-                          color: const Color(0xff5E1FB2),
-                        )
-                      ],
+                            ],
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 6.autoSize,
+                            color: const Color(0xff5E1FB2),
+                          )
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 9.autoSize),
-                ],
+                    SizedBox(height: 9.autoSize),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const BigImagePage()),
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    offset: const Offset(0, 1),
-                    blurRadius: 5.5,
-                    color: const Color(0xffD6D6D6).withOpacity(0.5),
-                  )
-                ],
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: 14.autoSize),
-                  Image.asset('assets/images/home/big_icon.png'),
-                  Padding(
-                    padding: EdgeInsets.all(8.autoSize!),
-                    child: Text(
-                      AppUtils.i18Translate("home.bigPhoto", context: context),
-                      style: TextStyle(
-                        fontSize: 13.autoSize,
-                        color: AppColor.textPrimary,
+          const SizedBox(width: 8),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const BigImagePage()),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      offset: const Offset(0, 1),
+                      blurRadius: 5.5,
+                      color: const Color(0xffD6D6D6).withOpacity(0.5),
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    SizedBox(height: 14.autoSize),
+                    Image.asset('assets/images/home/big_icon.png'),
+                    Padding(
+                      padding: EdgeInsets.all(8.autoSize!),
+                      child: Text(
+                        AppUtils.i18Translate("home.bigPhoto",
+                            context: context),
+                        style: TextStyle(
+                          fontSize: 13.autoSize,
+                          color: AppColor.textPrimary,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 7.autoSize),
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color: const Color(0xffE0F4FD),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.autoSize!,
-                      vertical: 2.autoSize!,
-                    ),
-                    width: double.infinity,
-                    margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
-                    height: 27.autoSize,
-                    child: Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${PhotoManagerTool.bigImageEntity.length}${AppUtils.i18Translate('home.sheet', context: context)}',
-                              style: TextStyle(
-                                fontSize: 8.autoSize!,
-                                color: const Color(0xff1C6EAA),
+                    SizedBox(height: 7.autoSize),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: const Color(0xffE0F4FD),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.autoSize!,
+                        vertical: 2.autoSize!,
+                      ),
+                      width: double.infinity,
+                      margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
+                      height: 27.autoSize,
+                      child: Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${PhotoManagerTool.bigImageEntity.length}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                style: TextStyle(
+                                  fontSize: 8.autoSize!,
+                                  color: const Color(0xff1C6EAA),
+                                ),
                               ),
-                            ),
-                            Text(
-                              bigPhotoSize.isNotEmpty ? bigPhotoSize : '0KB',
-                              style: TextStyle(
-                                fontSize: 8.autoSize!,
-                                color: const Color(0xff1C6EAA),
+                              Text(
+                                bigPhotoSize.isNotEmpty ? bigPhotoSize : '0KB',
+                                style: TextStyle(
+                                  fontSize: 8.autoSize!,
+                                  color: const Color(0xff1C6EAA),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 6.autoSize,
-                          color: const Color(0xff1C6EAA),
-                        )
-                      ],
+                            ],
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 6.autoSize,
+                            color: const Color(0xff1C6EAA),
+                          )
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 9.autoSize),
-                ],
+                    SizedBox(height: 9.autoSize),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const ScreenShotPage()),
-              );
-            },
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    offset: const Offset(0, 1),
-                    blurRadius: 5.5,
-                    color: const Color(0xffD6D6D6).withOpacity(0.5),
-                  )
-                ],
-              ),
-              child: Column(
-                children: [
-                  SizedBox(height: 14.autoSize),
-                  Image.asset('assets/images/home/screenshot_icon.png'),
-                  Padding(
-                    padding: EdgeInsets.all(8.autoSize!),
-                    child: Text(
-                      AppUtils.i18Translate("home.screenshot",
-                          context: context),
-                      style: TextStyle(
-                        fontSize: 13.autoSize,
-                        color: AppColor.textPrimary,
+          const SizedBox(width: 8),
+          Expanded(
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) => const ScreenShotPage()),
+                );
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      offset: const Offset(0, 1),
+                      blurRadius: 5.5,
+                      color: const Color(0xffD6D6D6).withOpacity(0.5),
+                    )
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    SizedBox(height: 14.autoSize),
+                    Image.asset('assets/images/home/screenshot_icon.png'),
+                    Padding(
+                      padding: EdgeInsets.all(8.autoSize!),
+                      child: Text(
+                        AppUtils.i18Translate("home.screenshot",
+                            context: context),
+                        style: TextStyle(
+                          fontSize: 13.autoSize,
+                          color: AppColor.textPrimary,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 7.autoSize),
-                  Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color: const Color(0xffDAE8FD),
-                    ),
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.autoSize!,
-                      vertical: 2.autoSize!,
-                    ),
-                    width: double.infinity,
-                    margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
-                    height: 27.autoSize,
-                    child: Row(
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${screenPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
-                              style: TextStyle(
-                                fontSize: 8.autoSize!,
-                                color: const Color(0xff1B5FC4),
+                    SizedBox(height: 7.autoSize),
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(4),
+                        color: const Color(0xffDAE8FD),
+                      ),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.autoSize!,
+                        vertical: 2.autoSize!,
+                      ),
+                      width: double.infinity,
+                      margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
+                      height: 27.autoSize,
+                      child: Row(
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${screenPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                style: TextStyle(
+                                  fontSize: 8.autoSize!,
+                                  color: const Color(0xff1B5FC4),
+                                ),
                               ),
-                            ),
-                            Text(
-                              screenPhotoSize.isNotEmpty
-                                  ? screenPhotoSize
-                                  : '0KB',
-                              style: TextStyle(
-                                fontSize: 8.autoSize!,
-                                color: const Color(0xff1B5FC4),
+                              Text(
+                                screenPhotoSize.isNotEmpty
+                                    ? screenPhotoSize
+                                    : '0KB',
+                                style: TextStyle(
+                                  fontSize: 8.autoSize!,
+                                  color: const Color(0xff1B5FC4),
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 6.autoSize,
-                          color: const Color(0xff1B5FC4),
-                        )
-                      ],
+                            ],
+                          ),
+                          const Spacer(),
+                          Icon(
+                            Icons.arrow_forward_ios_rounded,
+                            size: 6.autoSize,
+                            color: const Color(0xff1B5FC4),
+                          )
+                        ],
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 9.autoSize),
-                ],
+                    SizedBox(height: 9.autoSize),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Container _buildCircleProgressBar() {
+    AppUtils.screenW = MediaQuery.of(context).size.width;
+    final circleSize = 250.autoSize!;
     return Container(
+      padding: EdgeInsets.only(
+          top: MediaQuery.of(context).padding.top, left: 12, right: 12),
       height: 369.autoSize,
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(8)),
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
             Color(0xffECFBFF),
             Color(0xffF9F9F9),
           ],
         ),
       ),
-      margin: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -564,10 +623,77 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           Expanded(
-            child: Container(
-              child: CircleProgressBar(
-                valueNotifier: valueNotifier,
-                color: color,
+            child: Center(
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Image.asset(
+                    progressBgImage,
+                    width: 260.autoSize!,
+                    height: 260.autoSize!,
+                    fit: BoxFit.cover,
+                  ),
+                  Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(circleSize * 0.6 / 2),
+                      color: Colors.white,
+                    ),
+                    width: circleSize * 0.6,
+                    height: circleSize * 0.6,
+                  ),
+                  SizedBox(
+                    width: circleSize*0.55,
+                    height: circleSize*0.55,
+                    child: SimpleCircularProgressBar(
+                      size: circleSize,
+                      startAngle: 90,
+                      progressColors: [color],
+                      valueNotifier: valueNotifier,
+                      backColor: Colors.white,
+                    ),
+                  ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        AppUtils.i18Translate('home.useSpace'),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColor.textPrimary,
+                        ),
+                      ),
+                      Text.rich(
+                        TextSpan(children: [
+                          WidgetSpan(
+                            alignment: PlaceholderAlignment.bottom,
+                            child: Text(
+                              valueNotifier.value.toStringAsFixed(0),
+                              style: const TextStyle(
+                                fontSize: 43,
+                                color: AppColor.textPrimary,
+                                fontWeight: FontWeight.bold,
+                                height: 1,
+                              ),
+                            ),
+                          ),
+                          const WidgetSpan(
+                            child: Padding(
+                              padding: EdgeInsets.only(bottom: 10),
+                              child: Text(
+                                '%',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  color: AppColor.textPrimary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ]),
+                      ),
+                    ],
+                  )
+                ],
               ),
             ),
           ),
@@ -575,9 +701,9 @@ class _HomeScreenState extends State<HomeScreen> {
             alignment: Alignment.center,
             child: GestureDetector(
               onTap: () async {
-                getScreenshots();
-                // final number = await PhotoManagerTool.getPhotoCount();
-                // PhotoManagerTool.fetchPhoto(1);
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const ClearPage()),
+                );
               },
               child: Container(
                 decoration: BoxDecoration(

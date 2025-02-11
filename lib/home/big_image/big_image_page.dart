@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
@@ -11,10 +12,8 @@ import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class BigImagePage extends StatefulWidget {
@@ -30,23 +29,27 @@ class _BigImagePageState extends State<BigImagePage> {
   List<ImageAsset> selPhotos = [];
   bool isAllSel = false;
   StreamSubscription? streamSubscription;
+  bool isScrolling = false;
+
   @override
   void initState() {
     super.initState();
-    bigPhotos =
-        PhotoManagerTool.bigImageEntity.map((e) => ImageAsset(e)).toList();
+    bigPhotos = PhotoManagerTool.bigImageEntity;
     streamSubscription = globalStreamControler.stream.listen((event) {
       if (event is BigPhotoEvent) {
-        setState(() {
-          for (var newAsset in PhotoManagerTool.bigImageEntity) {
-            final findCaches = bigPhotos
-                .where((oldAsset) => oldAsset.assetEntity.id == newAsset.id)
-                .toList();
-            if (findCaches.isEmpty) {
-              bigPhotos.add(ImageAsset(newAsset));
+        if (mounted && !isScrolling) {
+          setState(() {
+            for (var newAsset in PhotoManagerTool.bigImageEntity) {
+              final findCaches = bigPhotos
+                  .where((oldAsset) =>
+                      oldAsset.assetEntity.id == newAsset.assetEntity.id)
+                  .toList();
+              if (findCaches.isEmpty) {
+                bigPhotos.add(newAsset);
+              }
             }
-          }
-        });
+          });
+        }
       } else if (event is RefreshEvent) {
         setState(() {});
       }
@@ -129,134 +132,145 @@ class _BigImagePageState extends State<BigImagePage> {
             ),
           ),
           Expanded(
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 9),
-                  sliver: SliverGrid.builder(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 4,
-                      mainAxisSpacing: 5,
-                      crossAxisSpacing: 5,
-                    ),
-                    itemCount: bigPhotos.length,
-                    itemBuilder: (context, index) {
-                      final assets = bigPhotos[index];
-                      return GestureDetector(
-                        onTap: () async {
-                          for (var asset in bigPhotos) {
-                            if (asset.originalFilePath == null) {
-                              final file = await asset.assetEntity.originFile;
-                              if (file != null)
-                                asset.originalFilePath = file.path;
-                            }
-                          }
-                          AppUtils.showImagePreviewDialog(
-                              AppUtils.globalContext!,
-                              bigPhotos
-                                  .map((e) => e.originalFilePath!)
-                                  .toList(),
-                              index);
-                        },
-                        child: Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: assets.thumnailBytes != null
-                                  ? Image.memory(
-                                      assets.thumnailBytes!,
-                                      width: imgW,
-                                      fit: BoxFit.cover,
-                                    )
-                                  : FutureBuilder(
-                                      future: _loadImage(assets),
-                                      builder: (context, snapshot) {
-                                        if (snapshot.connectionState ==
-                                                ConnectionState.done &&
-                                            snapshot.data != null) {
-                                          return Image.memory(
-                                            assets.thumnailBytes!,
-                                            width: imgW,
-                                            fit: BoxFit.cover,
-                                          );
-                                        } else {
-                                          return Image.asset(
-                                            'assets/images/common/placeholder.png',
-                                            fit: BoxFit.cover,
-                                          );
-                                        }
-                                      },
-                                    ),
-                            ),
-                            Positioned(
-                              right: 0,
-                              top: 0,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    assets.selected = !assets.selected;
-                                  });
-                                  if (assets.selected) {
-                                    selPhotos.add(assets);
-                                  } else {
-                                    selPhotos.remove(assets);
-                                  }
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(5),
-                                  child: Image.asset(
-                                    assets.selected
-                                        ? 'assets/images/common/selected_sel.png'
-                                        : 'assets/images/common/selected_normal.png',
-                                  ),
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 2,
-                              bottom: 2,
-                              child: Container(
-                                decoration: const BoxDecoration(
-                                  color: Colors.black,
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(4),
-                                  ),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 3, vertical: 2),
-                                child: assets.length == 0
-                                    ? FutureBuilder(
-                                        future: _loadImageSize(assets),
-                                        builder: (context, snapshot) {
-                                          return Text(
-                                            snapshot.connectionState ==
-                                                    ConnectionState.done
-                                                ? '${snapshot.data}'
-                                                : '0B',
-                                            style: const TextStyle(
-                                              fontSize: 9,
-                                              color: Colors.white,
-                                            ),
-                                          );
-                                        },
+            child: NotificationListener(
+              onNotification: (Notification notification) {
+                if (notification is ScrollStartNotification) {
+                  isScrolling = true;
+                } else if (notification is ScrollEndNotification) {
+                  isScrolling = false;
+                  setState(() {});
+                }
+                return true;
+              },
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 9),
+                    sliver: SliverGrid.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4,
+                        mainAxisSpacing: 5,
+                        crossAxisSpacing: 5,
+                      ),
+                      itemCount: bigPhotos.length,
+                      itemBuilder: (context, index) {
+                        final assets = bigPhotos[index];
+                        return GestureDetector(
+                          onTap: () {
+                            AppUtils.showImagePreviewDialog(
+                                AppUtils.globalContext!,
+                                bigPhotos
+                                    .map((e) => e.originalFilePath!)
+                                    .toList(),
+                                index);
+                          },
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: assets.thumnailBytes != null
+                                    ? Image.memory(
+                                        assets.thumnailBytes!,
+                                        width: imgW,
+                                        fit: BoxFit.cover,
                                       )
-                                    : Text(
-                                        AppUtils.fileSizeFormat(assets.length),
-                                        style: const TextStyle(
-                                          fontSize: 9,
-                                          color: Colors.white,
-                                        ),
+                                    : FutureBuilder(
+                                        future: _loadImage(assets),
+                                        builder: (context, snapshot) {
+                                          if (snapshot.connectionState ==
+                                              ConnectionState.done) {
+                                            return snapshot.data != null
+                                                ? Image.memory(
+                                                    snapshot.data!,
+                                                    width: imgW,
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : Image.asset(
+                                                    'assets/images/common/placeholder.png',
+                                                    fit: BoxFit.cover,
+                                                    width: imgW,
+                                                  );
+                                          } else {
+                                            return Image.asset(
+                                              'assets/images/common/placeholder.png',
+                                              fit: BoxFit.cover,
+                                              width: imgW,
+                                            );
+                                          }
+                                        },
                                       ),
                               ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      assets.selected = !assets.selected;
+                                      if (assets.selected) {
+                                        selPhotos.add(assets);
+                                      } else {
+                                        selPhotos.remove(assets);
+                                      }
+                                    });
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(5),
+                                    child: Image.asset(
+                                      assets.selected
+                                          ? 'assets/images/common/selected_sel.png'
+                                          : 'assets/images/common/selected_normal.png',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 2,
+                                bottom: 2,
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black,
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(4),
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 3, vertical: 2),
+                                  child: assets.length == 0
+                                      ? FutureBuilder(
+                                          future: _loadImageSize(assets),
+                                          builder: (context, snapshot) {
+                                            return Text(
+                                              snapshot.connectionState ==
+                                                      ConnectionState.done
+                                                  ? '${snapshot.data}'
+                                                  : '0B',
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: Colors.white,
+                                              ),
+                                            );
+                                          },
+                                        )
+                                      : Text(
+                                          AppUtils.fileSizeFormat(
+                                              assets.length),
+                                          style: const TextStyle(
+                                            fontSize: 9,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           Padding(
@@ -277,22 +291,23 @@ class _BigImagePageState extends State<BigImagePage> {
                       final newFileName =
                           '$dirName${Platform.pathSeparator}${fileName.split('.').first}_cmps.${fileName.split('.').last}';
                       final originalBytes = await file.readAsBytes();
-                      final cmpFile =
-                          await FlutterImageCompress.compressAndGetFile(
-                              file!.path,
-                              newFileName,
+                      final cmpFileBytes =
+                          await FlutterImageCompress.compressWithFile(file.path,
                               quality: 80);
-                      if (cmpFile != null) {
-                        // await File(cmpFile.path).;
-                        // file.writeAsBytes(cmpBytes,flush: true);
-                         await PhotoManager.editor.saveImageWithPath(
-                          cmpFile.path,
-                          title: '${fileName.split('.').first}_cmps.${fileName.split('.').last}',
-                        );
-                        print('-----');
-                        // ImageGallerySaver.saveFile(cmpFile.path,
-                        //     name:
-                        //         '${fileName.split('.').first}_cmps.${fileName.split('.').last}');
+                      if (cmpFileBytes != null) {
+                        var newFile = File(newFileName);
+                        newFile = await newFile.create();
+                        newFile.writeAsBytes(cmpFileBytes);
+                        try {
+                          // await PhotoManager.editor.saveImageWithPath(newFile.path);
+                          // final pathEntity = await AssetPathEntity.fromId(asset.assetEntity.id);
+                          // await PhotoManager.editor.copyAssetToPath(asset: assetEntity, pathEntity: pathEntity);
+                          final result = await PhotoManager.editor
+                              .deleteWithIds([asset.assetEntity.id]);
+                          print('-----压缩完成--$result');
+                        } catch (e) {
+                          print('-----压缩失败 $e');
+                        }
                       }
                     }
                   }

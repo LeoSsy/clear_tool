@@ -1,6 +1,7 @@
 {
     "home" : "首页",
     "mine" : "我的",
+    "noData" : "暂无数据",
     "dialog" : {
         "title1" : "温馨提示",
         "confirmTitle1" : "前往设置",

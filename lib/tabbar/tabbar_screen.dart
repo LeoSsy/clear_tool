@@ -1,5 +1,7 @@
 import 'package:clear_tool/extension/number_extension.dart';
+import 'package:clear_tool/home/clear_page/clear_page.dart';
 import 'package:clear_tool/home/home_screen.dart';
+import 'package:clear_tool/mine/mine_page.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:flutter/material.dart';
@@ -29,15 +31,14 @@ class _TabbarScreenState extends State<TabbarScreen> {
   late PageController pageController;
   final List<Widget> _pages = [];
 
-
   @override
   void initState() {
     super.initState();
-     pageController = PageController();
+    pageController = PageController();
     _pages
       ..add(const HomeScreen())
       ..add(const SizedBox())
-      ..add(const HomeScreen());
+      ..add(const MinePage());
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       AppUtils.pixelRatio = MediaQuery.of(context).devicePixelRatio;
       AppUtils.screenW = MediaQuery.of(context).size.width;
@@ -47,50 +48,57 @@ class _TabbarScreenState extends State<TabbarScreen> {
     checkPermission();
   }
 
-  void checkPermission() async{
-   final havePermission =  await PermissionUtils.checkPhotosPermisson();
-   if (havePermission) {
-     
-   }
+  void checkPermission() async {
+    final havePermission = await PermissionUtils.checkPhotosPermisson();
+    if (havePermission) {}
   }
-
 
   @override
   Widget build(BuildContext context) {
     AppUtils.globalContext = context;
-    return Scaffold(
-      body: PageView(
-        controller: pageController,
-        physics: const NeverScrollableScrollPhysics(),
-        children: _pages,
-      ),
-      floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: BottomAppBar(
-        shape: const CircularNotchedRectangle(),
-        child: Padding(
-          padding: const EdgeInsets.only(top: 5),
-          child: Theme(
-            data: Theme.of(context).copyWith(
-              highlightColor: Colors.transparent,
-              splashColor: Colors.transparent,
-            ),
-            child: BottomNavigationBar(
-              elevation: 0,
-              backgroundColor: Colors.transparent,
-              currentIndex: _currentIndex,
-              selectedFontSize: 10,
-              unselectedFontSize: 10,
-              iconSize: 25,
-              unselectedItemColor: Colors.black,
-              selectedItemColor: const Color.fromRGBO(5, 122, 229, 1),
-              onTap: (index) => _onTap(index),
-              type: BottomNavigationBarType.fixed,
-              items: __buildDarkBottomNavigationBarItem(),
+    return Stack(
+      children: [
+        Scaffold(
+          body: PageView(
+            controller: pageController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: _pages,
+          ),
+          // floatingActionButton: _buildFloatingActionButton(),
+          // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+          bottomNavigationBar: BottomAppBar(
+            shape: const CircularNotchedRectangle(),
+            height: 54,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 5),
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  highlightColor: Colors.transparent,
+                  splashColor: Colors.transparent,
+                ),
+                child: BottomNavigationBar(
+                  elevation: 0,
+                  backgroundColor: Colors.transparent,
+                  currentIndex: _currentIndex,
+                  selectedFontSize: 10,
+                  unselectedFontSize: 10,
+                  iconSize: 25,
+                  unselectedItemColor: Colors.black,
+                  selectedItemColor: const Color.fromRGBO(5, 122, 229, 1),
+                  onTap: (index) => _onTap(index),
+                  type: BottomNavigationBarType.fixed,
+                  items: __buildDarkBottomNavigationBarItem(),
+                ),
+              ),
             ),
           ),
         ),
-      ),
+        Positioned(
+          left: (MediaQuery.of(context).size.width /2) - 71/2 ,
+          bottom: AppUtils.safeAreapadding.bottom + 16,
+          child: _buildFloatingActionButton(),
+        ),
+      ],
     );
   }
 
@@ -101,6 +109,7 @@ class _TabbarScreenState extends State<TabbarScreen> {
     setState(() {
       _currentIndex = index;
     });
+    pageController.jumpToPage(index);
   }
 
   /// icons
@@ -135,19 +144,16 @@ class _TabbarScreenState extends State<TabbarScreen> {
   }
 
   Widget _buildFloatingActionButton() {
-    return FloatingActionButton(
-      heroTag: null, // 去除系统默认动画效果
-      elevation: 0,
-      backgroundColor: Colors.transparent,
-      onPressed: () {
+    return GestureDetector(
+      onTap: () {
         Navigator.of(context).push(
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const ClearPage()),
         );
       },
-      child: SizedBox(
-        width: 160.autoSize,
-        height: 160.autoSize,
-        child:Image.asset('assets/images/tab/clear_icon.png',width: 100.autoSize,height: 100.autoSize,),
+      child: Image.asset(
+        'assets/images/tab/clear_icon.png',
+        width: 71,
+        height: 71,
       ),
     );
   }

@@ -6,6 +6,7 @@ import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
+import 'package:clear_tool/widget/empty_widget.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -32,7 +33,7 @@ class _SameImagePageState extends State<SameImagePage> {
       } else if (event is RefreshEvent) {
         setState(() {});
       }
-       setState(() {});
+      setState(() {});
     });
   }
 
@@ -44,9 +45,11 @@ class _SameImagePageState extends State<SameImagePage> {
 
   @override
   Widget build(BuildContext context) {
-    final imgW = AppUtils.screenW / 4;
     return Scaffold(
+      backgroundColor: AppColor.bgColor,
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        centerTitle: true,
         leading: GestureDetector(
           onTap: () {
             Navigator.of(context).pop();
@@ -58,30 +61,41 @@ class _SameImagePageState extends State<SameImagePage> {
             ),
           ),
         ),
+        elevation: 0,
         title: Text(
-          AppUtils.i18Translate('home.samePhoto'),
-          style: const TextStyle(fontSize: 18),
+          AppUtils.i18Translate('home.samePhoto', context: context),
+          style: const TextStyle(
+            fontSize: 18,
+            color: AppColor.textPrimary,
+          ),
         ),
       ),
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(
-              child: PhotoManagerTool.isLoadingSamePhotos
-                  ? Row(
-                      children: [
-                        Text(
-                          '${AppUtils.i18Translate('home.recognition')}...',
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: AppColor.textPrimary,
+          samePhotos.isEmpty
+              ? const SliverFillRemaining(
+                  child: EmptyWidget(),
+                )
+              : SliverToBoxAdapter(
+                  child: PhotoManagerTool.isLoadingSamePhotos
+                      ? Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Row(
+                            children: [
+                              Text(
+                                '${AppUtils.i18Translate('home.recognition', context: context)}...',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppColor.textPrimary,
+                                ),
+                              ),
+                              const CupertinoActivityIndicator(
+                                color: AppColor.mainColor,
+                              ),
+                            ],
                           ),
-                        ),
-                        const CupertinoActivityIndicator(
-                          color: AppColor.mainColor,
-                        ),
-                      ],
-                    )
-                  : const SizedBox()),
+                        )
+                      : const SizedBox()),
           // SliverPadding(
           //   padding: const EdgeInsets.symmetric(horizontal: 12),
           //   sliver: SliverGrid.builder(

@@ -10,15 +10,13 @@ class PhotoManagerTool {
   static Map<String,AssetEntity> allPhotoAssetsIdMaps = {};
 
   /// 保存已加载的大图
-  static List<AssetEntity> bigImageEntity = [];
+  static List<ImageAsset> bigImageEntity = [];
   /// 保存大图容量
   static int bigSumSize = 0;
 
   /// 保存相似图片
   static List<IsolateAssetMessage> sameImageEntity = [];
 
-  /// 保存屏幕截图原始图片
-  static List<AssetEntity> screenShotOrigineEntity = [];
   /// 保存屏幕截图图片
   static List<ImageAsset> screenShotImageEntity = [];
 
@@ -94,67 +92,5 @@ class PhotoManagerTool {
       }
     }
     return photoAssets;
-  }
-
-  /// load big
-  static fetchBigImages() async {
-    final assetPaths =
-        await PhotoManager.getAssetPathList(type: RequestType.image);
-    List<AssetEntity> photoAssets = <AssetEntity>[];
-    List<AssetEntity> bigssets = <AssetEntity>[];
-    // 获取所有图片资源对象
-    for (var album in assetPaths) {
-      final assetItems = await album.getAssetListRange(start: 0, end: 100000);
-      photoAssets.addAll(assetItems);
-      // final count = await album.assetCountAsync;
-      // 计算分页
-      // const pageSize = 1000;
-      // final totalPage = (count / pageSize).ceil();
-      // var curentPage = 1;
-      // while (curentPage < totalPage) {
-      //   final assetItems =
-      //       await album.getAssetListPaged(page: curentPage, size: pageSize);
-      //   photoAssets.addAll(assetItems);
-      //   curentPage++;
-      // }
-    }
-    // for (var asset in photoAssets) {
-    //   final file = await asset.file;
-    //   if (file != null) {
-    //     final length = await file.length();
-    //     if (length / 1024 / 1024 > maxImageMB) {
-    //       bigssets.add(asset);
-    //     }
-    //   }
-    // }
-    // if (bigImageEntity.isEmpty) {
-    //   bigImageEntity.addAll(bigssets);
-    // } else {
-    //   final loadedIds = bigImageEntity.map((e) => e.id).toList();
-    //   for (var asset in bigssets) {
-    //     if (!loadedIds.contains(asset.id)) {
-    //       bigImageEntity.add(asset);
-    //     }
-    //   }
-    // }
-    for (var asset in photoAssets) {
-      final file = await asset.file;
-      if (file != null) {
-        final length = await file.length();
-        if (length / 1024 / 1024 > maxImageMB) {
-          if (bigImageEntity.isEmpty) {
-            bigImageEntity.add(asset);
-          } else {
-            final loadedIds = bigImageEntity.map((e) => e.id).toList();
-            for (var asset in bigssets) {
-              if (!loadedIds.contains(asset.id)) {
-                bigImageEntity.add(asset);
-              }
-            }
-          }
-        }
-      }
-    }
-    return bigImageEntity;
   }
 }

@@ -1,7 +1,16 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
+import 'package:clear_tool/dialog/dialog.dart';
+import 'package:clear_tool/event/event_define.dart';
+import 'package:clear_tool/extension/number_extension.dart';
+import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
+import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -16,28 +25,40 @@ class ScreenShotPage extends StatefulWidget {
 
 class _ScreenShotPageState extends State<ScreenShotPage> {
   List<ImageAsset> screenshots = [];
+  List<ImageAsset> selPhotos = [];
+  bool isAllSel = false;
+  StreamSubscription? streamSubscription;
+  bool isScrolling = false;
 
   @override
   void initState() {
     super.initState();
-    fetchScreenShots();
+    screenshots = PhotoManagerTool.screenShotImageEntity;
+    streamSubscription = globalStreamControler.stream.listen((event) {
+      if (event is ScreenPhotoEvent) {
+        if (mounted && !isScrolling) {
+          setState(() {
+            for (var newAsset in PhotoManagerTool.screenShotImageEntity) {
+              final findCaches = screenshots
+                  .where((oldAsset) =>
+                      oldAsset.assetEntity.id == newAsset.assetEntity.id)
+                  .toList();
+              if (findCaches.isEmpty) {
+                screenshots.add(newAsset);
+              }
+            }
+          });
+        }
+      } else if (event is RefreshEvent) {
+        if (mounted) setState(() {});
+      }
+    });
   }
 
-  fetchScreenShots() async {
-    if (PhotoManagerTool.screenShotImageEntity.isNotEmpty) {
-      screenshots = PhotoManagerTool.screenShotImageEntity;
-    } else {
-      final tempAssets = PhotoManagerTool.screenShotOrigineEntity;
-      for (var asset in tempAssets) {
-        final imageAsset = ImageAsset(asset);
-        imageAsset.thumnailBytes = await asset.thumbnailData;
-        final file = await asset.originFile;
-        imageAsset.originalFilePath = file!.path;
-        screenshots.add(imageAsset);
-      }
-      PhotoManagerTool.screenShotImageEntity = screenshots;
-    }
-    setState(() {});
+  @override
+  void dispose() {
+    streamSubscription?.cancel();
+    super.dispose();
   }
 
   @override
@@ -45,6 +66,7 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
     final imgW = AppUtils.screenW / 4;
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.white,
         centerTitle: true,
         leading: GestureDetector(
           onTap: () {
@@ -54,109 +76,223 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Image.asset(
               'assets/images/common/back.png',
-              color: Colors.white,
             ),
           ),
         ),
         title: Text(
-          AppUtils.i18Translate('home.screenshot', context: context),
-          style: const TextStyle(fontSize: 18),
+          '${AppUtils.i18Translate('home.screenshot', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})',
+          style: const TextStyle(
+            fontSize: 15,
+            color: AppColor.textPrimary,
+          ),
         ),
-      ),
-      body: CustomScrollView(
-        slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            sliver: SliverGrid.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 5,
-                crossAxisSpacing: 5,
-              ),
-              itemCount: screenshots.length,
-              itemBuilder: (context, index) {
-                final assets = screenshots[index];
-                return GestureDetector(
-                  onTap: () {
-                    AppUtils.showImagePreviewDialog(context, screenshots.map((e) => e.originalFilePath!).toList(),index);
-                  },
-                  child: Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: assets.thumnailBytes != null
-                            ? Image.memory(
-                                assets.thumnailBytes!,
-                                width: imgW,
-                                fit: BoxFit.cover,
-                              )
-                            : Image.asset(
-                                'assets/images/common/placeholder.png',
-                                width: imgW,
-                              ),
-                      ),
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              assets.selected = !assets.selected;
-                            });
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.all(5),
-                            child: Image.asset(
-                              assets.selected
-                                  ? 'assets/images/common/selected_sel.png'
-                                  : 'assets/images/common/selected_normal.png',
-                            ),
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: 2,
-                        bottom: 2,
-                        child: Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(4),
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 3, vertical: 2),
-                          child: assets.length > 0
-                              ? Text(
-                                  AppUtils.fileSizeFormat(assets.length),
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : FutureBuilder(
-                                  future: _loadImageSize(assets),
-                                  builder: (context, snapshot) {
-                                    return Text(
-                                      snapshot.connectionState ==
-                                              ConnectionState.done
-                                          ? '${snapshot.data}'
-                                          : '0KB',
-                                      style: const TextStyle(
-                                        fontSize: 9,
-                                        color: Colors.white,
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
+        elevation: 0,
+        actions: [
+          TextButton(
+              onPressed: () {
+                setState(() {
+                  isAllSel = !isAllSel;
+                  if (isAllSel) {
+                    selPhotos = screenshots.map((e) {
+                      e.selected = true;
+                      return e;
+                    }).toList();
+                  } else {
+                    screenshots.map((e) {
+                      e.selected = false;
+                      return e;
+                    }).toList();
+                    selPhotos = [];
+                  }
+                });
               },
+              child: Text(
+                isAllSel
+                    ? AppUtils.i18Translate('home.unSelectedAll',
+                        context: context)
+                    : AppUtils.i18Translate('home.selectedAll',
+                        context: context),
+                style: TextStyle(
+                  fontSize: 11.autoSize,
+                  color: AppColor.mainColor,
+                ),
+              ))
+        ],
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: NotificationListener(
+              onNotification: (Notification notification) {
+                if (notification is ScrollStartNotification) {
+                  isScrolling = true;
+                } else if (notification is ScrollEndNotification) {
+                  isScrolling = false;
+                  setState(() {});
+                }
+                return true;
+              },
+              child: CustomScrollView(
+                slivers: [
+                  SliverPadding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    sliver: SliverGrid.builder(
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 4,
+                        mainAxisSpacing: 5,
+                        crossAxisSpacing: 5,
+                      ),
+                      itemCount: screenshots.length,
+                      itemBuilder: (context, index) {
+                        final assets = screenshots[index];
+                        return GestureDetector(
+                          onTap: () {
+                            AppUtils.showImagePreviewDialog(
+                                context,
+                                screenshots
+                                    .map((e) => e.originalFilePath!)
+                                    .toList(),
+                                index);
+                          },
+                          child: Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: assets.thumnailBytes != null
+                                    ? Image.memory(
+                                        assets.thumnailBytes!,
+                                        width: imgW,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Image.asset(
+                                        'assets/images/common/placeholder.png',
+                                        width: imgW,
+                                      ),
+                              ),
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () {
+                                    setState(() {
+                                      assets.selected = !assets.selected;
+                                      if (assets.selected) {
+                                        selPhotos.add(assets);
+                                      } else {
+                                        selPhotos.remove(assets);
+                                      }
+                                    });
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(8),
+                                    child: Image.asset(
+                                      assets.selected
+                                          ? 'assets/images/common/selected_sel.png'
+                                          : 'assets/images/common/selected_normal.png',
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                right: 2,
+                                bottom: 2,
+                                child: Container(
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black,
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(4),
+                                    ),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 3, vertical: 2),
+                                  child: assets.length > 0
+                                      ? Text(
+                                          AppUtils.fileSizeFormat(
+                                              assets.length),
+                                          style: const TextStyle(
+                                            fontSize: 9,
+                                            color: Colors.white,
+                                          ),
+                                        )
+                                      : FutureBuilder(
+                                          future: _loadImageSize(assets),
+                                          builder: (context, snapshot) {
+                                            return Text(
+                                              snapshot.connectionState ==
+                                                      ConnectionState.done
+                                                  ? '${snapshot.data}'
+                                                  : '0KB',
+                                              style: const TextStyle(
+                                                fontSize: 9,
+                                                color: Colors.white,
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                ],
+              ),
             ),
-          )
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              left: 12,
+              right: 12,
+              top: 12,
+              bottom: AppUtils.safeAreapadding.bottom + 12,
+            ),
+            child: GestureDetector(
+              onTap: () async {
+                final state = await PermissionUtils.checkPhotosPermisson();
+                if (state) {
+                  final res = await AppDialog.showConfirmDialog(
+                    AppUtils.globalContext!,
+                    desc: AppUtils.i18Translate('home.deletConfirm'),
+                    confirmBackgroundColor: Colors.red,
+                    confirmTitle: AppUtils.i18Translate('home.confirm'),
+                    cancleTitle: AppUtils.i18Translate('home.cancle'),
+                  );
+                  if (res) {
+                    await PhotoManager.editor.deleteWithIds(
+                        selPhotos.map((e) => e.assetEntity.id).toList());
+                  }
+                } else {
+                  final res = await AppDialog.showConfirmDialog(
+                    AppUtils.globalContext!,
+                    desc: AppUtils.i18Translate('home.deniedPhotoPermission'),
+                  );
+                  if (res) {
+                    AppSettings.openAppSettings();
+                  }
+                }
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color: AppColor.mainColor,
+                ),
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                alignment: Alignment.center,
+                child: Text(
+                  '${AppUtils.i18Translate('home.delete', context: context)}${selPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

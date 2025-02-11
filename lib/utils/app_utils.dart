@@ -76,7 +76,7 @@ class AppUtils {
               ),
               Positioned(
                 right: 12,
-                top: 30,
+                top: AppUtils.safeAreapadding.top + 12,
                 child: IconButton(
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(

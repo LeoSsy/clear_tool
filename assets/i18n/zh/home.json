@@ -16,5 +16,10 @@
     "unSelectedAll" : "取消全选",
     "zip" : "压缩",
     "image" : "图片",
-    "deniedPhotoPermission" : "暂无相册访问权限，是否前往开启？"
+    "deniedPhotoPermission" : "暂无相册访问权限，是否前往开启？",
+    "deletConfirm" :  "确认删除吗?",
+    "delete" :  "删除",
+    "confirm" :  "确定",
+    "cancle" :  "取消",
+    "gotoClear" : "去清理"
 }
