@@ -35,9 +35,13 @@ class AppUtils {
 
   /// 文件大小格式化
   static String fileSizeFormat(int size) {
-    final unit = ['B', 'KB', 'MB', 'GB'];
-    final tp = (log(size) / log(1024)).floor();
-    return '${(size / pow(1024, tp)).toStringAsFixed(2)}${unit[tp.toInt()]}';
+    try {
+      final unit = ['B', 'KB', 'MB', 'GB'];
+      final tp = (log(size) / log(1024)).floor();
+      return '${(size / pow(1024, tp)).toStringAsFixed(2)}${unit[tp.toInt()]}';
+    } catch (e) {
+      return '0KB';
+    }
   }
 
   /// 预览图片

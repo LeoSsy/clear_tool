@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
+import 'package:clear_tool/dialog/dialog.dart';
 import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/big_image/big_image_page.dart';
@@ -13,6 +14,7 @@ import 'package:clear_tool/home/widget/circle_progress.dart';
 import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
+import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -94,6 +96,33 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void getScreenshots() async {
+    Future.delayed(const Duration(milliseconds: 300), () async {
+      AppUtils.globalContext = context;
+      // 检查权限
+      final havePermission = await PermissionUtils.checkPhotosPermisson(
+          permisinUsingInfo:
+              AppUtils.i18Translate('common.dialog.use_info_photo'));
+      if (havePermission) {
+        PhotoManagerTool.allPhotoAssets = [];
+        final assetPaths =
+            await PhotoManager.getAssetPathList(type: RequestType.image);
+        // 获取所有图片资源对象
+        for (var album in assetPaths) {
+          final count = await album.assetCountAsync;
+          final assetItems =
+              await album.getAssetListRange(start: 0, end: count);
+          PhotoManagerTool.allPhotoAssets.addAll(assetItems);
+          // id 映射
+          for (var asset in assetItems) {
+            if (!PhotoManagerTool.allPhotoAssetsIdMaps.containsKey(asset.id)) {
+              PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
+            }
+          }
+        }
+        // 所有图片加载完成 发送通知
+        globalStreamControler.add(AllPhotoLoadFinishEvent());
+      }
+    });
     _streamSubscription = globalStreamControler.stream.listen((event) async {
       if (event is AllPhotoLoadFinishEvent) {
         // 开启子线程检测数据
@@ -642,8 +671,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: circleSize * 0.6,
                   ),
                   SizedBox(
-                    width: circleSize*0.55,
-                    height: circleSize*0.55,
+                    width: circleSize * 0.55,
+                    height: circleSize * 0.55,
                     child: SimpleCircularProgressBar(
                       size: circleSize,
                       startAngle: 90,

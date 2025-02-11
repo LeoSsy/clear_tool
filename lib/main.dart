@@ -25,33 +25,33 @@ FlutterIsolate? bigPhotoIsolate;
 FlutterIsolate? screenshotPhotoIsolate;
 
 /// 加载所有资源路径
-Future loadAllPhotosIsolate() async {
-  Future.delayed(const Duration(milliseconds: 300), () async {
-    // 检查权限
-    final havePermission = await PermissionUtils.checkStoragePermisson(
-        permisinUsingInfo:
-            AppUtils.i18Translate('common.dialog.use_info_photo'));
-    if (havePermission) {
-      PhotoManagerTool.allPhotoAssets = [];
-      final assetPaths =
-          await PhotoManager.getAssetPathList(type: RequestType.image);
-      // 获取所有图片资源对象
-      for (var album in assetPaths) {
-        final count = await album.assetCountAsync;
-        final assetItems = await album.getAssetListRange(start: 0, end: count);
-        PhotoManagerTool.allPhotoAssets.addAll(assetItems);
-        // id 映射
-        for (var asset in assetItems) {
-          if (!PhotoManagerTool.allPhotoAssetsIdMaps.containsKey(asset.id)) {
-            PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
-          }
-        }
-      }
-      // 所有图片加载完成 发送通知
-      globalStreamControler.add(AllPhotoLoadFinishEvent());
-    }
-  });
-}
+// Future loadAllPhotosIsolate() async {
+//   Future.delayed(const Duration(milliseconds: 300), () async {
+//     // 检查权限
+//     final havePermission = await PermissionUtils.checkStoragePermisson(
+//         permisinUsingInfo:
+//             AppUtils.i18Translate('common.dialog.use_info_photo'));
+//     if (havePermission) {
+//       PhotoManagerTool.allPhotoAssets = [];
+//       final assetPaths =
+//           await PhotoManager.getAssetPathList(type: RequestType.image);
+//       // 获取所有图片资源对象
+//       for (var album in assetPaths) {
+//         final count = await album.assetCountAsync;
+//         final assetItems = await album.getAssetListRange(start: 0, end: count);
+//         PhotoManagerTool.allPhotoAssets.addAll(assetItems);
+//         // id 映射
+//         for (var asset in assetItems) {
+//           if (!PhotoManagerTool.allPhotoAssetsIdMaps.containsKey(asset.id)) {
+//             PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
+//           }
+//         }
+//       }
+//       // 所有图片加载完成 发送通知
+//       globalStreamControler.add(AllPhotoLoadFinishEvent());
+//     }
+//   });
+// }
 
 @pragma('vm:entry-point')
 void spawnBigPhotosIsolate(SendPort port) async {
@@ -184,7 +184,7 @@ void main() async {
   }, onError: (err) {
     print("Received message from isolate $err");
   });
-  loadAllPhotosIsolate();
+  // loadAllPhotosIsolate();
   runApp(MyApp(
     flutterI18nDelegate: flutterI18nDelegate,
   ));
