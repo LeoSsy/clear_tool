@@ -14,8 +14,6 @@ PODS:
   - fluttertoast (0.0.2):
     - Flutter
     - Toast
-  - image_gallery_saver (2.0.2):
-    - Flutter
   - images_picker (0.0.1):
     - Flutter
     - ZLPhotoBrowser (= 4.2.5)
@@ -62,7 +60,6 @@ DEPENDENCIES:
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_isolate (from `.symlinks/plugins/flutter_isolate/ios`)
   - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
-  - image_gallery_saver (from `.symlinks/plugins/image_gallery_saver/ios`)
   - images_picker (from `.symlinks/plugins/images_picker/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
@@ -91,8 +88,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_isolate/ios"
   fluttertoast:
     :path: ".symlinks/plugins/fluttertoast/ios"
-  image_gallery_saver:
-    :path: ".symlinks/plugins/image_gallery_saver/ios"
   images_picker:
     :path: ".symlinks/plugins/images_picker/ios"
   path_provider_foundation:
@@ -111,7 +106,6 @@ SPEC CHECKSUMS:
   flutter_image_compress_common: ec1d45c362c9d30a3f6a0426c297f47c52007e3e
   flutter_isolate: 0edf5081826d071adf21759d1eb10ff5c24503b5
   fluttertoast: 31b00dabfa7fb7bacd9e7dbee580d7a2ff4bf265
-  image_gallery_saver: cb43cc43141711190510e92c460eb1655cd343cb
   images_picker: fa9364e3a7d3083c49f865fcfb2b9e7cdc574d3a
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
@@ -124,6 +118,6 @@ SPEC CHECKSUMS:
   Toast: 91b396c56ee72a5790816f40d3a94dd357abc196
   ZLPhotoBrowser: 4bfab86b851042e18d7f413284472aa68759626a
 
-PODFILE CHECKSUM: 70d9d25280d0dd177a5f637cdb0f0b0b12c6a189
+PODFILE CHECKSUM: 8887fe507942d63681d4275b547829f5d7750fe9
 
 COCOAPODS: 1.16.2

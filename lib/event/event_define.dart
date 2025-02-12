@@ -1,8 +1,8 @@
 import 'package:clear_tool/const/const.dart';
 
 class SamePhotoEvent {
-  final List<Map<String, dynamic>> assets;
-  SamePhotoEvent(this.assets);
+  final SamePhotoGroup group;
+  SamePhotoEvent(this.group);
 }
 
 

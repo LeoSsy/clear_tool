@@ -1,11 +1,8 @@
-import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/clear_page/clear_page.dart';
 import 'package:clear_tool/home/home_screen.dart';
 import 'package:clear_tool/mine/mine_page.dart';
 import 'package:clear_tool/utils/app_utils.dart';
-import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:flutter/material.dart';
-
 class TabbarScreen extends StatefulWidget {
   const TabbarScreen({Key? key}) : super(key: key);
 
@@ -45,12 +42,6 @@ class _TabbarScreenState extends State<TabbarScreen> {
       AppUtils.screenH = MediaQuery.of(context).size.height;
       AppUtils.safeAreapadding = MediaQuery.of(context).padding;
     });
-    checkPermission();
-  }
-
-  void checkPermission() async {
-    final havePermission = await PermissionUtils.checkPhotosPermisson();
-    if (havePermission) {}
   }
 
   @override
@@ -68,7 +59,7 @@ class _TabbarScreenState extends State<TabbarScreen> {
           // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
           bottomNavigationBar: BottomAppBar(
             shape: const CircularNotchedRectangle(),
-            height: 54,
+            height: 55,
             child: Padding(
               padding: const EdgeInsets.only(top: 5),
               child: Theme(
@@ -94,8 +85,8 @@ class _TabbarScreenState extends State<TabbarScreen> {
           ),
         ),
         Positioned(
-          left: (MediaQuery.of(context).size.width /2) - 71/2 ,
-          bottom: AppUtils.safeAreapadding.bottom + 16,
+          left: (MediaQuery.of(context).size.width / 2) - 71 / 2,
+          bottom: MediaQuery.of(context).padding.bottom + 71*0.2,
           child: _buildFloatingActionButton(),
         ),
       ],

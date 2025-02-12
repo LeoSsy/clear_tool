@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:isolate';
+
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/event/event_define.dart';
@@ -8,7 +9,6 @@ import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/tabbar/tabbar_screen.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/image_hash_util.dart';
-import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -24,35 +24,6 @@ ReceivePort globalPort = ReceivePort();
 FlutterIsolate? bigPhotoIsolate;
 FlutterIsolate? screenshotPhotoIsolate;
 
-/// 加载所有资源路径
-// Future loadAllPhotosIsolate() async {
-//   Future.delayed(const Duration(milliseconds: 300), () async {
-//     // 检查权限
-//     final havePermission = await PermissionUtils.checkStoragePermisson(
-//         permisinUsingInfo:
-//             AppUtils.i18Translate('common.dialog.use_info_photo'));
-//     if (havePermission) {
-//       PhotoManagerTool.allPhotoAssets = [];
-//       final assetPaths =
-//           await PhotoManager.getAssetPathList(type: RequestType.image);
-//       // 获取所有图片资源对象
-//       for (var album in assetPaths) {
-//         final count = await album.assetCountAsync;
-//         final assetItems = await album.getAssetListRange(start: 0, end: count);
-//         PhotoManagerTool.allPhotoAssets.addAll(assetItems);
-//         // id 映射
-//         for (var asset in assetItems) {
-//           if (!PhotoManagerTool.allPhotoAssetsIdMaps.containsKey(asset.id)) {
-//             PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
-//           }
-//         }
-//       }
-//       // 所有图片加载完成 发送通知
-//       globalStreamControler.add(AllPhotoLoadFinishEvent());
-//     }
-//   });
-// }
-
 @pragma('vm:entry-point')
 void spawnBigPhotosIsolate(SendPort port) async {
   PhotoManagerTool.allPhotoAssets = [];
@@ -62,6 +33,9 @@ void spawnBigPhotosIsolate(SendPort port) async {
   int bigPhotoSize = 0;
   for (var album in assetPaths) {
     final count = await album.assetCountAsync;
+    if (count == 0) {
+      break;
+    }
     final assetItems = await album.getAssetListRange(start: 0, end: count);
     for (var asset in assetItems) {
       final originalFile = await asset.file;
@@ -81,6 +55,7 @@ void spawnBigPhotosIsolate(SendPort port) async {
         }
       }
     }
+    break;
   }
 }
 
@@ -93,9 +68,11 @@ void spawnScreenshotIsolate(SendPort port) async {
   for (var album in assetPaths) {
     if (album.name == 'Screenshots') {
       final count = await album.assetCountAsync;
-      final screenshotAssets =
-          await album.getAssetListRange(start: 0, end: count);
-      photoAssets.addAll(screenshotAssets);
+      if (count > 0) {
+        final screenshotAssets =
+            await album.getAssetListRange(start: 0, end: count);
+        photoAssets.addAll(screenshotAssets);
+      }
       break;
     }
   }
@@ -119,29 +96,125 @@ Map<String, String> hashs = {};
 @pragma('vm:entry-point')
 void spawnSamePhotosIsolate(SendPort port) async {
   // 获取所有图片资源对象
-  Map<String, String> hashs = {};
-  PhotoManagerTool.allPhotoAssets = [];
-  final assetPaths =
-      await PhotoManager.getAssetPathList(type: RequestType.image);
-  // 获取所有图片资源对象
-  for (var album in assetPaths) {
-    final count = await album.assetCountAsync;
-    final assetItems = await album.getAssetListRange(start: 0, end: count);
-    for (var asset in assetItems) {
-      final t = await asset.file;
-      final bytes = await asset.thumbnailData;
-      if (bytes != null) {
-        img.Image? image = img.decodeImage(bytes);
-        final hash = ImageHashUtil.generateImageHash(image!);
-        print('hash----$hash');
-        hashs[hash.toString()] = t!.path;
-        hashs.keys.toList().sort();
-        port.send({
-          "event": "test",
-          "data": hashs,
-        });
+  Map<String, AssetEntity> hashs = {};
+    PhotoManagerTool.allPhotoAssets = [];
+    final assetPaths =
+        await PhotoManager.getAssetPathList(type: RequestType.image);
+    int allCount = 0;
+    int afterCmpNum = 11;
+    if (assetPaths.isNotEmpty) {
+      for (var album in assetPaths) {
+        int count = await album.assetCountAsync;
+        if (count == 0) continue;
+        final assetItems = await album.getAssetListRange(start: 0, end: count);
+        for (var i = 0; i < assetItems.length; i++) {
+          final asset = assetItems[i];
+          final bytes = await asset.thumbnailData;
+          if (bytes != null) {
+            final hash =
+                ImageHashUtil.calculateAverageHash(img.decodeImage(bytes)!);
+            hashs[hash] = asset;
+            print('hash.....$hash');
+          }
+          // final currentImage = await assetItems[i].file;
+          // int afterIndex = 1;
+          // final groupIds = <String>[];
+          // while (afterIndex < afterCmpNum &&
+          //     (i + afterIndex) < assetItems.length) {
+          //   final nextImage = await assetItems[i + afterIndex].file;
+          //   final similary =
+          //       await compareImages(src1: currentImage, src2: nextImage);
+          //   if (similary < 0.5) {
+          //     print('找到相似图片.....');
+          //     // 添加组
+          //     if (groupIds.isEmpty) {
+          //       groupIds.add(assetItems[i].id);
+          //     }
+          //     groupIds.add(assetItems[i + afterIndex].id);
+          //   }
+          //   afterIndex++;
+          // }
+          // port.send({
+          //   "event": "sameEvent",
+          //   "data": SamePhotoGroup(
+          //           id: assetItems[i].id,
+          //           title: '${groupIds.length}',
+          //           ids: groupIds)
+          //       .toJson(),
+          // });
+        }
       }
     }
+    for (var i = 0; i < hashs.length; i++) {
+      final groupIds = <String>[];
+      final currentHash = hashs.keys.toList()[i];
+      bool isFindSame = false;
+      for (var j = 0; j < hashs.length; j++) {
+        final nextHash = hashs.keys.toList()[j];
+        if (hashs[currentHash]!.id == hashs[nextHash]!.id) {
+          continue;
+        }
+        // final distance =
+        //     ImageHashUtil.calculateHammingDistance(currentHash, nextHash);
+        final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
+        print('distance.....$distance');
+        if (distance > 0.85) {
+          isFindSame = true;
+          print('找到相似图片.....');
+          print('找到相似图片.....');
+          //   // 添加组
+          if (groupIds.isEmpty) {
+            groupIds.add(hashs[currentHash]!.id);
+            groupIds.add(hashs[nextHash]!.id);
+          }
+        }
+      }
+      if (isFindSame) {
+        port.send({
+          "event": "sameEvent",
+          "data": SamePhotoGroup(
+                  id: hashs[currentHash]!.id,
+                  title: '${groupIds.length}',
+                  ids: groupIds)
+              .toJson(),
+        });
+      }
+
+      // int afterIndex = i + 1;
+      // final currentHash = hashs.keys.toList()[i];
+      // final groupIds = <String>[];
+      // int loop = 1;
+      // while (loop < afterCmpNum) {
+      //   if (i + loop < hashs.length) {
+      //     final nextHash = hashs.keys.toList()[i + loop];
+      //     final distance =
+      //         ImageHashUtil.calculateHammingDistance(currentHash, nextHash);
+      //     print('distance.....$distance');
+      //     if (distance < 5) {
+      //       print('找到相似图片.....');
+
+      //     }
+      //   }
+      //   loop++;
+      //   // final nextHash = hashs.keys.toList()[afterIndex];
+      //   // final distance =
+      //   //     ImageHashUtil.calculateHammingDistance(currentHash, nextHash);
+      //   // print('distance.....$distance');
+      //   // if (distance < 5) {
+      //   //   print('找到相似图片.....');
+      //   // }
+      //   // final nextImage = await assetItems[i + afterIndex].file;
+      //   // final similary =
+      //   //     await compareImages(src1: currentImage, src2: nextImage);
+      //   // if (similary < 0.5) {
+      //   //   print('找到相似图片.....');
+      //   //   // 添加组
+      //   //   if (groupIds.isEmpty) {
+      //   //     groupIds.add(assetItems[i].id);
+      //   //   }
+      //   //   groupIds.add(assetItems[i + afterIndex].id);
+      //   // }
+      // }
   }
 }
 
@@ -169,7 +242,8 @@ void main() async {
   globalPort.listen((data) {
     // 监听子线程发送的数据
     if (data['event'] == "sameEvent") {
-      globalStreamControler.add(SamePhotoEvent(data['data']));
+      globalStreamControler
+          .add(SamePhotoEvent(SamePhotoGroup.fromJson(data['data'])));
     } else if (data['event'] == "BigPhotoEvent") {
       globalStreamControler.add(BigPhotoEvent(data['data'], data['size']));
     } else if (data['event'] == "screenshotEvent") {

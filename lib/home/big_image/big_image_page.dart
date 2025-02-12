@@ -12,8 +12,10 @@ import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
+import 'package:clear_tool/utils/toast_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class BigImagePage extends StatefulWidget {
@@ -281,8 +283,11 @@ class _BigImagePageState extends State<BigImagePage> {
                 bottom: AppUtils.safeAreapadding.bottom + 12),
             child: GestureDetector(
               onTap: () async {
-                final state = await PermissionUtils.checkPhotosPermisson();
-                if (state) {
+                // final state = await PermissionUtils.checkPhotosWritePermisson();
+                PermissionState state1 =
+                    await PhotoManager.requestPermissionExtend();
+                if (state1.hasAccess) {
+                  List<String> deleIds = [];
                   for (var asset in selPhotos) {
                     final file = await asset.assetEntity.originFile;
                     if (file != null) {
@@ -290,26 +295,58 @@ class _BigImagePageState extends State<BigImagePage> {
                       final fileName = file.uri.pathSegments.last;
                       final newFileName =
                           '$dirName${Platform.pathSeparator}${fileName.split('.').first}_cmps.${fileName.split('.').last}';
-                      final originalBytes = await file.readAsBytes();
-                      final cmpFileBytes =
-                          await FlutterImageCompress.compressWithFile(file.path,
-                              quality: 80);
-                      if (cmpFileBytes != null) {
-                        var newFile = File(newFileName);
-                        newFile = await newFile.create();
-                        newFile.writeAsBytes(cmpFileBytes);
-                        try {
-                          // await PhotoManager.editor.saveImageWithPath(newFile.path);
-                          // final pathEntity = await AssetPathEntity.fromId(asset.assetEntity.id);
-                          // await PhotoManager.editor.copyAssetToPath(asset: assetEntity, pathEntity: pathEntity);
-                          final result = await PhotoManager.editor
-                              .deleteWithIds([asset.assetEntity.id]);
-                          print('-----压缩完成--$result');
-                        } catch (e) {
-                          print('-----压缩失败 $e');
+                      try {
+                        final cmpFileBytes =
+                            await FlutterImageCompress.compressWithFile(
+                          file.path,
+                          quality: 80,
+                        );
+                        if (cmpFileBytes != null) {
+                          await PhotoManager.editor.saveImage(
+                            cmpFileBytes,
+                            filename:
+                                '${fileName.split('.').first}_cmps.${fileName.split('.').last}',
+                            orientation: asset.assetEntity.orientation,
+                            relativePath: asset.assetEntity.relativePath,
+                            title: asset.assetEntity.title,
+                          );
+                          deleIds.add(asset.assetEntity.id);
                         }
+                      } catch (e) {}
+                    }
+                  }
+                  try {
+                    final result =
+                        await PhotoManager.editor.deleteWithIds(deleIds);
+                    // 通知界面刷新重新加载数据
+                    //TODO 通知其他页面刷新数据
+                    // 关闭大图检查线程 重写开启新线程
+                    bigPhotoIsolate?.kill();
+                    bigPhotoIsolate = await FlutterIsolate.spawn(
+                        spawnBigPhotosIsolate, globalPort.sendPort);
+                    for (var id in deleIds) {
+                      PhotoManagerTool.allPhotoAssetsIdMaps.remove(id);
+                      PhotoManagerTool.bigImageEntity = PhotoManagerTool
+                          .bigImageEntity
+                          .where((el) => el.assetEntity.id != id)
+                          .toList();
+                    }
+                    var newList = <ImageAsset>[];
+                    for (var bigAsset in bigPhotos) {
+                      if (!deleIds.contains(bigAsset.assetEntity.id)) {
+                        newList.add(bigAsset);
                       }
                     }
+                    setState(() {
+                      bigPhotos = newList;
+                    });
+                    ToastUtil.showSuccessInfo(
+                        AppUtils.i18Translate('home.zipOk'));
+                    print('-----压缩完成--$result');
+                  } catch (e) {
+                    ToastUtil.showSuccessInfo(
+                        AppUtils.i18Translate('home.zipErr'));
+                    print('-----压缩失败 $e');
                   }
                 } else {
                   final res = await AppDialog.showConfirmDialog(

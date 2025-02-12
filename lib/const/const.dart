@@ -18,6 +18,31 @@ class ImageAsset {
   ImageAsset(this.assetEntity);
 }
 
+class SamePhotoGroup {
+  String? id;
+  String? title;
+  List<String>? ids;
+  /// 辅助属性
+  List<ImageAsset> assets = [];
+  bool selected = false;
+
+  SamePhotoGroup({required this.id,this.title, this.ids});
+
+  SamePhotoGroup.fromJson(Map<String, dynamic> json) {
+    id = json['id'];
+    title = json['title'];
+    ids = json['ids'];
+  }
+
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = <String, dynamic>{};
+    data['id'] = id;
+    data['title'] = title;
+    data['ids'] = ids;
+    return data;
+  }
+}
+
 /// 线程之间通信数据
 class IsolateAssetMessage {
   String? id;

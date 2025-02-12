@@ -9,13 +9,12 @@ import 'package:permission_handler/permission_handler.dart';
 
 /// 权限工具类
 class PermissionUtils {
-  /// 检查相册权限
+  /// 检查相册读取权限
   static Future<bool> checkPhotosPermisson({String? permisinUsingInfo}) async {
     bool? isPoped;
-    var navigator;
+    var navigator = Navigator.of(AppUtils.globalContext!);
     if (AppUtils.globalContext != null) {
       isPoped = false;
-      navigator = Navigator.of(AppUtils.globalContext!);
       AppDialog.showPermissionHintDialog(AppUtils.globalContext,
               desc: permisinUsingInfo ?? AppUtils.i18Translate("common.dialog.use_info_photo"))
           .then((value) {
@@ -24,59 +23,56 @@ class PermissionUtils {
         }
       });
     }
-
     /// 授权结果
     bool permisionResult = false;
     PermissionStatus permission;
-    // android 13
-    if (Platform.isAndroid) {
-      final androidInfo = await DeviceInfoPlugin().androidInfo;
-      if (int.parse(androidInfo.version.release.split('.').first) >= 13) {
-        permission = await Permission.photos.status;
-      } else {
-        // 申请结果  权限检测
-        permission = await Permission.storage.status;
-      }
-      // ios
-    } else {
-      final iosInfo = await DeviceInfoPlugin().iosInfo;
-      // ios14及以上 使用photos
-      if (int.parse(iosInfo.systemVersion!.split('.').first) >= 14) {
-        // 申请结果  权限检测
-        permission = await Permission.photos.status;
-      } else {
-        // 申请结果  权限检测
-        permission = await Permission.camera.status;
-      }
-    }
+    permission = await Permission.photos.request();
     if (permission != PermissionStatus.granted) {
-      PermissionStatus pp;
-      if (Platform.isAndroid) {
-        final androidInfo = await DeviceInfoPlugin().androidInfo;
-        if (int.parse(androidInfo.version.release.split('.').first) >= 13) {
-          await [Permission.photos].request();
-          pp = await Permission.photos.status;
-        } else {
-          //   //只有当用户同时点选了拒绝开启权限和不再提醒后才会true
-          await [Permission.storage].request();
-          // 申请结果  权限检测
-          pp = await Permission.storage.status;
+      PermissionStatus pp = await Permission.photos.request();
+      if (pp == PermissionStatus.granted) {
+        // 关闭权限说明弹框
+        if (isPoped != null && !isPoped!) {
+          navigator.pop();
         }
-        // ios
+        permisionResult = true;
       } else {
-        final iosInfo = await DeviceInfoPlugin().iosInfo;
-        // ios14及以上 使用photos
-        if (int.parse(iosInfo.systemVersion!.split('.').first) >= 14) {
-          //只有当用户同时点选了拒绝开启权限和不再提醒后才会true
-          await [Permission.photos].request();
-          // 申请结果  权限检测
-          pp = await Permission.photos.status;
-        } else {
-          await [Permission.camera].request();
-          // 申请结果  权限检测
-          pp = await Permission.camera.status;
+        // 关闭权限说明弹框
+        if (isPoped != null && !isPoped!) {
+          navigator.pop();
         }
+        await _showPhotoAlbumDeniedDialog();
+        permisionResult = false;
       }
+    } else {
+      // 关闭权限说明弹框
+      if (isPoped != null && !isPoped!) {
+        navigator.pop();
+      }
+      permisionResult = true;
+    }
+    return permisionResult;
+  }
+
+   /// 检查相册写入权限
+  static Future<bool> checkPhotosWritePermisson({String? permisinUsingInfo}) async {
+    bool? isPoped;
+    var navigator = Navigator.of(AppUtils.globalContext!);
+    if (AppUtils.globalContext != null) {
+      isPoped = false;
+      AppDialog.showPermissionHintDialog(AppUtils.globalContext,
+              desc: permisinUsingInfo ?? AppUtils.i18Translate("common.dialog.use_info_photo"))
+          .then((value) {
+        if (value != null) {
+          isPoped = true;
+        }
+      });
+    }
+    /// 授权结果
+    bool permisionResult = false;
+    PermissionStatus permission;
+    permission = await Permission.photosAddOnly.request();
+    if (permission != PermissionStatus.granted) {
+      PermissionStatus pp = await Permission.photosAddOnly.request();
       if (pp == PermissionStatus.granted) {
         // 关闭权限说明弹框
         if (isPoped != null && !isPoped!) {

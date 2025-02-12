@@ -3,28 +3,23 @@ import 'dart:io';
 import 'dart:math';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
-import 'package:clear_tool/dialog/dialog.dart';
 import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/big_image/big_image_page.dart';
 import 'package:clear_tool/home/clear_page/clear_page.dart';
 import 'package:clear_tool/home/same_image/same_image_page.dart';
 import 'package:clear_tool/home/screen_shot/screen_shot_page.dart';
-import 'package:clear_tool/home/widget/circle_progress.dart';
 import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
-import 'package:image_compare_2/image_compare_2.dart';
-import 'package:images_picker/images_picker.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:simple_circular_progress_bar/simple_circular_progress_bar.dart';
 import 'package:system_device_info/system_device_info.dart';
+import 'package:circle_progress_bar/circle_progress_bar.dart' as cp;
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -34,7 +29,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  late ValueNotifier<double> valueNotifier = ValueNotifier(0);
+  ValueNotifier<double> valueNotifier = ValueNotifier(0);
 
   String totalSize = '';
   String useSize = '';
@@ -44,10 +39,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // List<AssetEntity> samePhotos = [];
 
   /// 相似照片集合
-  List<IsolateAssetMessage> samePhotos = [];
+  List<SamePhotoGroup> samePhotos = [];
 
   /// 相似照片容量
-  String samePhotoSize = '';
+  int samePhotoSize = 0;
 
   /// 屏幕截图合集
   List<ImageAsset> screenPhotos = [];
@@ -65,7 +60,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String bigPhotoSize = '';
 
   /// 进度圆颜色
-  Color color = Colors.red;
+  Color color = Colors.white;
 
   /// 进度圆背景图片
   String progressBgImage = 'assets/images/home/blue_progress_bg.png';
@@ -79,9 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // worker = Worker();
-    diskTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
-      getDiskInfo();
+    valueNotifier.addListener(() {
+      setState(() {});
     });
     changeLanguage();
     getDiskInfo();
@@ -92,37 +86,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _streamSubscription.cancel();
     diskTimer.cancel();
+    valueNotifier.removeListener(() {});
     super.dispose();
   }
 
   void getScreenshots() async {
-    Future.delayed(const Duration(milliseconds: 300), () async {
-      AppUtils.globalContext = context;
-      // 检查权限
-      final havePermission = await PermissionUtils.checkPhotosPermisson(
-          permisinUsingInfo:
-              AppUtils.i18Translate('common.dialog.use_info_photo'));
-      if (havePermission) {
-        PhotoManagerTool.allPhotoAssets = [];
-        final assetPaths =
-            await PhotoManager.getAssetPathList(type: RequestType.image);
-        // 获取所有图片资源对象
-        for (var album in assetPaths) {
-          final count = await album.assetCountAsync;
-          final assetItems =
-              await album.getAssetListRange(start: 0, end: count);
-          PhotoManagerTool.allPhotoAssets.addAll(assetItems);
-          // id 映射
-          for (var asset in assetItems) {
-            if (!PhotoManagerTool.allPhotoAssetsIdMaps.containsKey(asset.id)) {
-              PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
-            }
-          }
-        }
-        // 所有图片加载完成 发送通知
-        globalStreamControler.add(AllPhotoLoadFinishEvent());
-      }
-    });
     _streamSubscription = globalStreamControler.stream.listen((event) async {
       if (event is AllPhotoLoadFinishEvent) {
         // 开启子线程检测数据
@@ -132,23 +100,35 @@ class _HomeScreenState extends State<HomeScreen> {
         bigPhotoIsolate = await FlutterIsolate.spawn(
             spawnBigPhotosIsolate, globalPort.sendPort);
       } else if (event is SamePhotoEvent) {
-        int sumSize = 0;
-        for (var map in event.assets) {
-          // 查找是否存在重复的图片
-          final findElements = samePhotos
-              .where(
-                  (element) => element.id != null && element.id! == map['id'])
-              .toList();
-          if (findElements.isNotEmpty) continue;
-          final asset = IsolateAssetMessage.fromJson(map);
-          if (asset.orignalFilePath != null) {
-            final length = await File(asset.orignalFilePath!).length();
-            sumSize += length;
+        final group = event.group;
+        // 获取所有图片id集合
+        final newAssetList = <SamePhotoGroup>[];
+        if (group.ids != null) {
+          int sumSize = 0;
+          for (var assetId in group.ids!) {
+            if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(assetId)) {
+              final assetEntity =
+                  PhotoManagerTool.allPhotoAssetsIdMaps[assetId]!;
+              final file = await assetEntity.originFile;
+              if (file != null) {
+                final length = await file.length();
+                final thumbnailData = await assetEntity.thumbnailData;
+                group.assets.add(ImageAsset(assetEntity)
+                  ..originalFilePath = file.path
+                  ..thumnailBytes = thumbnailData
+                  ..length = length
+                  );
+                newAssetList.add(group);
+                sumSize+=length;
+              }
+            }
           }
-          samePhotos.add(IsolateAssetMessage.fromJson(map));
+          setState(() {
+            samePhotos.addAll(newAssetList);
+          });
+          samePhotoSize+=sumSize;
         }
         PhotoManagerTool.sameImageEntity = samePhotos;
-        samePhotoSize = AppUtils.fileSizeFormat(sumSize);
         setState(() {});
       } else if (event is ScreenPhotoEvent) {
         // 获取所有图片id集合
@@ -221,8 +201,8 @@ class _HomeScreenState extends State<HomeScreen> {
             sumSize += length;
           }
         }
-        bigPhotos.addAll(newAssetList);
-        PhotoManagerTool.bigImageEntity = bigPhotos;
+        PhotoManagerTool.bigImageEntity.addAll(newAssetList);
+        bigPhotos = PhotoManagerTool.bigImageEntity;
         setState(() {
           PhotoManagerTool.bigSumSize += sumSize;
           bigPhotoSize = AppUtils.fileSizeFormat(PhotoManagerTool.bigSumSize);
@@ -232,6 +212,36 @@ class _HomeScreenState extends State<HomeScreen> {
         globalStreamControler.add(SubBigPhotoEvent(bigPhotos, sumSize));
       } else if (event is RefreshEvent) {
         setState(() {});
+      }
+    });
+    Future.delayed(const Duration(milliseconds: 300), () async {
+      // 检查权限
+      final havePermission = await PermissionUtils.checkPhotosPermisson(
+          permisinUsingInfo: AppUtils.i18Translate(
+              'common.dialog.use_info_photo',
+              context: AppUtils.globalContext));
+      if (havePermission) {
+        PhotoManagerTool.allPhotoAssets = [];
+        final assetPaths =
+            await PhotoManager.getAssetPathList(type: RequestType.image);
+        // 获取所有图片资源对象
+        for (var album in assetPaths) {
+          final count = await album.assetCountAsync;
+          if (count > 0) {
+            final assetItems =
+                await album.getAssetListRange(start: 0, end: count);
+            PhotoManagerTool.allPhotoAssets.addAll(assetItems);
+            // id 映射
+            for (var asset in assetItems) {
+              if (!PhotoManagerTool.allPhotoAssetsIdMaps
+                  .containsKey(asset.id)) {
+                PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
+              }
+            }
+          }
+        }
+        // 所有图片加载完成 发送通知
+        globalStreamControler.add(AllPhotoLoadFinishEvent());
       }
     });
   }
@@ -256,20 +266,21 @@ class _HomeScreenState extends State<HomeScreen> {
     if (fz != null) {
       useSize = AppUtils.fileSizeFormat(tz! - fz);
       final value = ((tz - fz) / tz) * 100;
-      valueNotifier.value = value;
       if (value > 90) {
-        color = AppColor.red;
+        color = const Color(0xffEC5C0C);
         progressBgImage = 'assets/images/home/red_progress_bg.png';
       } else if (value > 70) {
-        color = Colors.orange;
+        color = const Color(0xffE7950C);
         progressBgImage = 'assets/images/home/orange_progress_bg.png';
       } else if (value > 30) {
-        color = AppColor.yellow;
+        color = const Color(0xffDAD31B);
         progressBgImage = 'assets/images/home/yellow_progress_bg.png';
       } else {
         color = AppColor.mainColor;
         progressBgImage = 'assets/images/home/blue_progress_bg.png';
       }
+      valueNotifier.value = value;
+      setState(() {});
     }
 
     if (Platform.isAndroid) {
@@ -402,8 +413,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               Text(
-                                samePhotoSize.isNotEmpty
-                                    ? samePhotoSize
+                                samePhotoSize > 0
+                                    ? AppUtils.fileSizeFormat(samePhotoSize)
                                     : '0KB',
                                 style: TextStyle(
                                   fontSize: 8.autoSize,
@@ -671,14 +682,16 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: circleSize * 0.6,
                   ),
                   SizedBox(
-                    width: circleSize * 0.55,
-                    height: circleSize * 0.55,
-                    child: SimpleCircularProgressBar(
-                      size: circleSize,
-                      startAngle: 90,
-                      progressColors: [color],
-                      valueNotifier: valueNotifier,
-                      backColor: Colors.white,
+                    width: circleSize * 0.6,
+                    height: circleSize * 0.6,
+                    child: Transform.rotate(
+                      angle: 90 * pi / 180,
+                      child: cp.CircleProgressBar(
+                        foregroundColor: color,
+                        backgroundColor: Colors.white,
+                        strokeWidth: 14,
+                        value: valueNotifier.value / 100,
+                      ),
                     ),
                   ),
                   Column(
