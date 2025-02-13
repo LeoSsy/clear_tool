@@ -16,6 +16,8 @@ class PhotoManagerTool {
 
   /// 保存相似图片
   static List<SamePhotoGroup> sameImageEntity = [];
+  /// 相似照片容量
+  static int samePhotoSize = 0;
 
   /// 保存屏幕截图图片
   static List<ImageAsset> screenShotImageEntity = [];

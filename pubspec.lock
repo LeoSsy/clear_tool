@@ -261,6 +261,14 @@ packages:
       url: "https://pub.flutter-io.cn"
     source: hosted
     version: "8.2.2"
+  group_grid_view:
+    dependency: "direct main"
+    description:
+      name: group_grid_view
+      sha256: "267e444819036c36d4541860ebff335b0e8a42391dcbb798d21cb7db7fffa674"
+      url: "https://pub.flutter-io.cn"
+    source: hosted
+    version: "1.0.1"
   http:
     dependency: transitive
     description:

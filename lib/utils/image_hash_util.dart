@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:image/image.dart' as img;
+import 'package:image_compare_2/image_compare_2.dart';
 
 class ImageHashUtil {
   // 计算平均哈希值
@@ -35,6 +38,33 @@ class ImageHashUtil {
     return hash;
   }
 
+  // 计算差异哈希值
+  static String calculateDHash(img.Image image) {
+    // 1. 调整图像大小为 9x8
+    img.Image resizedImage = img.copyResize(image, width: 9, height: 8);
+    // 2. 将图像转换为灰度图
+    img.Image grayImage = img.grayscale(resizedImage);
+    // 3. 比较相邻像素的灰度值
+    String hash = '';
+    for (int y = 0; y < grayImage.height; y++) {
+      for (int x = 0; x < grayImage.width - 1; x++) {
+        img.Pixel currentPixel = grayImage.getPixel(x, y);
+        img.Pixel nextPixel = grayImage.getPixel(x + 1, y);
+        int currentGray = img
+            .getLuminanceRgb(currentPixel.r, currentPixel.g, currentPixel.b)
+            .toInt();
+        int nextGray =
+            img.getLuminanceRgb(nextPixel.r, nextPixel.g, nextPixel.b).toInt();
+        if (currentGray > nextGray) {
+          hash += '1';
+        } else {
+          hash += '0';
+        }
+      }
+    }
+    return hash;
+  }
+
 // 计算汉明距离的函数
   static int calculateHammingDistance(String hash1, String hash2) {
     if (hash1.length != hash2.length) {
@@ -49,7 +79,7 @@ class ImageHashUtil {
     return distance;
   }
 
- static double compareHashes(String hash1, String hash2) {
+  static double compareHashes(String hash1, String hash2) {
     int matches = 0;
     for (var i = 0; i < hash1.length; i++) {
       if (hash1[i] == hash2[i]) {
@@ -57,6 +87,72 @@ class ImageHashUtil {
       }
     }
     return matches / hash1.length;
+  }
+
+  // 计算感知哈希值
+  static String calculatePHash(img.Image image) {
+    // 1. 调整图像大小为 32x32
+    img.Image resizedImage = img.copyResize(image, width: 32, height: 32);
+    // 2. 将图像转换为灰度图
+    img.Image grayImage = img.grayscale(resizedImage);
+    // 3. 进行离散余弦变换（DCT）
+    List<List<double>> dctMatrix = _dct(grayImage);
+    // 4. 取 DCT 变换结果的左上角 8x8 区域（忽略直流分量）
+    List<double> lowFrequencyComponents = [];
+    for (int y = 0; y < 8; y++) {
+      for (int x = 0; x < 8; x++) {
+        if (x != 0 || y != 0) {
+          lowFrequencyComponents.add(dctMatrix[y][x]);
+        }
+      }
+    }
+    // 5. 计算这些低频分量的中位数
+    double median = _calculateMedian(lowFrequencyComponents);
+    // 6. 根据中位数生成 pHash 值
+    int pHash = 0;
+    for (int i = 0; i < lowFrequencyComponents.length; i++) {
+      if (lowFrequencyComponents[i] > median) {
+        pHash |= (1 << i);
+      }
+    }
+    return pHash.toString();
+  }
+
+// 进行离散余弦变换（DCT）
+  static List<List<double>> _dct(img.Image image) {
+    int width = image.width;
+    int height = image.height;
+    List<List<double>> dctMatrix =
+        List.generate(height, (_) => List.filled(width, 0.0));
+    double c(int k) => (k == 0) ? 1 / sqrt(2) : 1;
+    for (int u = 0; u < height; u++) {
+      for (int v = 0; v < width; v++) {
+        double sum = 0;
+        for (int y = 0; y < height; y++) {
+          for (int x = 0; x < width; x++) {
+            img.Pixel pixel = image.getPixel(x, y);
+            double pixelValue =
+                img.getLuminanceRgb(pixel.r, pixel.g, pixel.b).toDouble();
+            sum += pixelValue *
+                cos((2 * y + 1) * u * pi / (2 * height)) *
+                cos((2 * x + 1) * v * pi / (2 * width));
+          }
+        }
+        dctMatrix[u][v] = 0.25 * c(u) * c(v) * sum;
+      }
+    }
+    return dctMatrix;
+  }
+
+// 计算列表的中位数
+  static double _calculateMedian(List<double> values) {
+    values.sort();
+    int length = values.length;
+    if (length % 2 == 0) {
+      return (values[length ~/ 2 - 1] + values[length ~/ 2]) / 2;
+    } else {
+      return values[length ~/ 2];
+    }
   }
 }
 

@@ -116,20 +116,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 group.assets.add(ImageAsset(assetEntity)
                   ..originalFilePath = file.path
                   ..thumnailBytes = thumbnailData
-                  ..length = length
-                  );
+                  ..length = length);
                 newAssetList.add(group);
-                sumSize+=length;
+                sumSize += length;
               }
             }
           }
+          for (var newAsset in newAssetList) {
+            final sameCache =
+                samePhotos.where((el) => el.id == newAsset.id).toList();
+            if (sameCache.isEmpty) {
+              samePhotos.add(newAsset);
+            }
+          }
           setState(() {
-            samePhotos.addAll(newAssetList);
+            samePhotoSize += sumSize;
+            PhotoManagerTool.sameImageEntity = samePhotos;
+            PhotoManagerTool.samePhotoSize = samePhotoSize;
           });
-          samePhotoSize+=sumSize;
         }
-        PhotoManagerTool.sameImageEntity = samePhotos;
-        setState(() {});
       } else if (event is ScreenPhotoEvent) {
         // 获取所有图片id集合
         final newAssetList = <ImageAsset>[];

@@ -25,6 +25,7 @@ class SamePhotoGroup {
   /// 辅助属性
   List<ImageAsset> assets = [];
   bool selected = false;
+  int totalSize = 0;
 
   SamePhotoGroup({required this.id,this.title, this.ids});
 

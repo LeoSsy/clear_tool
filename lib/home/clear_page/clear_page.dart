@@ -6,6 +6,7 @@ import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/big_image/big_image_page.dart';
+import 'package:clear_tool/home/same_image/same_image_page.dart';
 import 'package:clear_tool/home/screen_shot/screen_shot_page.dart';
 import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
@@ -33,10 +34,34 @@ class _ClearPageState extends State<ClearPage> {
     super.initState();
     bigPhotos = PhotoManagerTool.bigImageEntity;
     screenshotPhotos = PhotoManagerTool.screenShotImageEntity;
+    for (var group in PhotoManagerTool.sameImageEntity) {
+      for (var asset in group.assets) {
+        samePhotos.add(asset);
+      }
+    }
+    _caculateSamePhotoFileSize();
     _caculateBigPhotoFileSize();
     _caculateScreenshotPhotoFileSize();
     streamSubscription = globalStreamControler.stream.listen((event) {
-      if (event is SubBigPhotoEvent) {
+      if (event is SamePhotoEvent) {
+        if (mounted) {
+          setState(() {
+            var newAssets = <ImageAsset>[];
+            for (var newAsset in event.group.assets) {
+              final findCaches = samePhotos
+                  .where((oldAsset) =>
+                      oldAsset.assetEntity.id == newAsset.assetEntity.id)
+                  .toList();
+              if (findCaches.isEmpty) {
+                newAssets.add(newAsset);
+              }
+            }
+            samePhotos.addAll(newAssets);
+            _samePhotoSize =
+                AppUtils.fileSizeFormat(PhotoManagerTool.samePhotoSize);
+          });
+        }
+      } else if (event is SubBigPhotoEvent) {
         if (mounted) {
           setState(() {
             var newAssets = <ImageAsset>[];
@@ -76,6 +101,23 @@ class _ClearPageState extends State<ClearPage> {
   void dispose() {
     streamSubscription?.cancel();
     super.dispose();
+  }
+
+  /// 计算文件大小
+  _caculateSamePhotoFileSize() async {
+    if (samePhotos.isEmpty) return;
+    int samePhotoSize = 0;
+    for (var asset in samePhotos) {
+      if (asset.length == 0 && asset.originalFilePath != null) {
+        int length = await File(asset.originalFilePath!).length();
+        samePhotoSize += length;
+      } else {
+        samePhotoSize += asset.length;
+      }
+    }
+    setState(() {
+      _samePhotoSize = AppUtils.fileSizeFormat(samePhotoSize);
+    });
   }
 
   /// 计算文件大小
@@ -165,19 +207,20 @@ class _ClearPageState extends State<ClearPage> {
                             Expanded(
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(2),
-                                child: const SizedBox(
+                                child:  SizedBox(
                                   height: 4,
                                   child: LinearProgressIndicator(
-                                    value: 10,
+                                    value: 0.5,
                                     color: AppColor.mainColor,
+                                    backgroundColor: Colors.red,
                                   ),
                                 ),
                               ),
                             ),
                             const SizedBox(width: 6),
-                            const Text(
-                              '10%',
-                              style: TextStyle(
+                            Text(
+                              '$imageProcessProgress%',
+                              style:const TextStyle(
                                 fontSize: 7,
                                 color: AppColor.textPrimary,
                               ),
@@ -211,9 +254,9 @@ class _ClearPageState extends State<ClearPage> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const Text(
-                            '（6张图片, 1.234 MB）',
-                            style: TextStyle(
+                          Text(
+                            '（${samePhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}, ${_samePhotoSize ?? '0KB'}）',
+                            style: const TextStyle(
                               fontSize: 11,
                               color: AppColor.subTitle999,
                             ),
@@ -226,39 +269,80 @@ class _ClearPageState extends State<ClearPage> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  shrinkWrap: true,
-                                  itemCount: 2,
-                                  itemBuilder: (context, index) {
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(2),
-                                      child: Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 5),
-                                        child: Image.asset(
-                                          'assets/images/common/placeholder.png',
-                                          fit: BoxFit.cover,
-                                          width: 70.autoSize,
-                                          height: 70.autoSize,
-                                        ),
-                                      ),
-                                    );
-                                  }),
+                              child: samePhotos.isEmpty
+                                  ? ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      shrinkWrap: true,
+                                      itemCount: 2,
+                                      itemBuilder: (context, index) {
+                                        return ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(2),
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 5),
+                                            child: Image.asset(
+                                              'assets/images/common/placeholder.png',
+                                              fit: BoxFit.cover,
+                                              width: 70.autoSize,
+                                              height: 70.autoSize,
+                                            ),
+                                          ),
+                                        );
+                                      })
+                                  : ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      shrinkWrap: true,
+                                      itemCount: samePhotos.length > 3
+                                          ? 3
+                                          : samePhotos.length,
+                                      itemBuilder: (context, index) {
+                                        final asset = samePhotos[index];
+                                        return ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(2),
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 5),
+                                            child: asset.thumnailBytes != null
+                                                ? Image.memory(
+                                                    asset.thumnailBytes!,
+                                                    fit: BoxFit.cover,
+                                                    width: 70.autoSize,
+                                                    height: 70.autoSize,
+                                                  )
+                                                : Image.asset(
+                                                    'assets/images/common/placeholder.png',
+                                                    fit: BoxFit.cover,
+                                                    width: 70.autoSize,
+                                                    height: 70.autoSize,
+                                                  ),
+                                          ),
+                                        );
+                                      }),
                             ),
-                            Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(4),
-                                color: AppColor.mainColor,
-                              ),
-                              width: 75.autoSize,
-                              height: 26.autoSize,
-                              alignment: Alignment.center,
-                              child: Text(
-                                AppUtils.i18Translate('home.gotoClear'),
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.white,
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                      builder: (context) =>
+                                          const SameImagePage()),
+                                );
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(4),
+                                  color: AppColor.mainColor,
+                                ),
+                                width: 75.autoSize,
+                                height: 26.autoSize,
+                                alignment: Alignment.center,
+                                child: Text(
+                                  AppUtils.i18Translate('home.gotoClear'),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.white,
+                                  ),
                                 ),
                               ),
                             )
@@ -307,7 +391,28 @@ class _ClearPageState extends State<ClearPage> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: ListView.builder(
+                              child: bigPhotos.isEmpty
+                                  ? ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      shrinkWrap: true,
+                                      itemCount: 2,
+                                      itemBuilder: (context, index) {
+                                        return ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(2),
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 5),
+                                            child: Image.asset(
+                                              'assets/images/common/placeholder.png',
+                                              fit: BoxFit.cover,
+                                              width: 70.autoSize,
+                                              height: 70.autoSize,
+                                            ),
+                                          ),
+                                        );
+                                      })
+                                  : ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   shrinkWrap: true,
                                   itemCount: bigPhotos.length > 3
@@ -407,7 +512,28 @@ class _ClearPageState extends State<ClearPage> {
                           crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: ListView.builder(
+                              child:screenshotPhotos.isEmpty
+                                  ? ListView.builder(
+                                      scrollDirection: Axis.horizontal,
+                                      shrinkWrap: true,
+                                      itemCount: 2,
+                                      itemBuilder: (context, index) {
+                                        return ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(2),
+                                          child: Padding(
+                                            padding:
+                                                const EdgeInsets.only(right: 5),
+                                            child: Image.asset(
+                                              'assets/images/common/placeholder.png',
+                                              fit: BoxFit.cover,
+                                              width: 70.autoSize,
+                                              height: 70.autoSize,
+                                            ),
+                                          ),
+                                        );
+                                      })
+                                  : ListView.builder(
                                   scrollDirection: Axis.horizontal,
                                   shrinkWrap: true,
                                   itemCount: screenshotPhotos.length > 3

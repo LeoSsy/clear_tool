@@ -24,6 +24,9 @@ ReceivePort globalPort = ReceivePort();
 FlutterIsolate? bigPhotoIsolate;
 FlutterIsolate? screenshotPhotoIsolate;
 
+/// 处理进度
+double imageProcessProgress = 0;
+
 @pragma('vm:entry-point')
 void spawnBigPhotosIsolate(SendPort port) async {
   PhotoManagerTool.allPhotoAssets = [];
@@ -46,6 +49,8 @@ void spawnBigPhotosIsolate(SendPort port) async {
           final mbSize = double.tryParse(size.replaceAll("MB", '')) ?? 0;
           if (mbSize > maxImageMB) {
             bigPhotoSize += length;
+            final index = assetItems.indexOf(asset);
+            imageProcessProgress += (index / assetItems.length) * 33.33;
             port.send({
               "event": "BigPhotoEvent",
               "data": asset.id,
@@ -82,6 +87,8 @@ void spawnScreenshotIsolate(SendPort port) async {
     if (originalFile != null) {
       final length = await originalFile.length();
       totalSize += length;
+      final index = photoAssets.indexOf(asset);
+      imageProcessProgress += (index / photoAssets.length) * 33.33;
       port.send({
         "event": "screenshotEvent",
         "data": asset.id,
@@ -97,125 +104,69 @@ Map<String, String> hashs = {};
 void spawnSamePhotosIsolate(SendPort port) async {
   // 获取所有图片资源对象
   Map<String, AssetEntity> hashs = {};
-    PhotoManagerTool.allPhotoAssets = [];
-    final assetPaths =
-        await PhotoManager.getAssetPathList(type: RequestType.image);
-    int allCount = 0;
-    int afterCmpNum = 11;
-    if (assetPaths.isNotEmpty) {
-      for (var album in assetPaths) {
-        int count = await album.assetCountAsync;
-        if (count == 0) continue;
-        final assetItems = await album.getAssetListRange(start: 0, end: count);
-        for (var i = 0; i < assetItems.length; i++) {
-          final asset = assetItems[i];
-          final bytes = await asset.thumbnailData;
-          if (bytes != null) {
-            final hash =
-                ImageHashUtil.calculateAverageHash(img.decodeImage(bytes)!);
-            hashs[hash] = asset;
-            print('hash.....$hash');
-          }
-          // final currentImage = await assetItems[i].file;
-          // int afterIndex = 1;
-          // final groupIds = <String>[];
-          // while (afterIndex < afterCmpNum &&
-          //     (i + afterIndex) < assetItems.length) {
-          //   final nextImage = await assetItems[i + afterIndex].file;
-          //   final similary =
-          //       await compareImages(src1: currentImage, src2: nextImage);
-          //   if (similary < 0.5) {
-          //     print('找到相似图片.....');
-          //     // 添加组
-          //     if (groupIds.isEmpty) {
-          //       groupIds.add(assetItems[i].id);
-          //     }
-          //     groupIds.add(assetItems[i + afterIndex].id);
-          //   }
-          //   afterIndex++;
-          // }
-          // port.send({
-          //   "event": "sameEvent",
-          //   "data": SamePhotoGroup(
-          //           id: assetItems[i].id,
-          //           title: '${groupIds.length}',
-          //           ids: groupIds)
-          //       .toJson(),
-          // });
+  PhotoManagerTool.allPhotoAssets = [];
+  final assetPaths =
+      await PhotoManager.getAssetPathList(type: RequestType.image);
+  int start = DateTime.now().millisecondsSinceEpoch;
+  if (assetPaths.isNotEmpty) {
+    for (var album in assetPaths) {
+      int count = await album.assetCountAsync;
+      if (count == 0) continue;
+      final assetItems = await album.getAssetListRange(start: 0, end: count);
+      for (var i = 0; i < assetItems.length; i++) {
+        final asset = assetItems[i];
+        final bytes = await asset.thumbnailData;
+        if (bytes != null) {
+          // final hash = ImageHashUtil.calculateAverageHash(img.decodeImage(bytes)!);
+          final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
+          hashs[hash] = asset;
+          print('hash.....$hash');
         }
       }
     }
-    for (var i = 0; i < hashs.length; i++) {
-      final groupIds = <String>[];
-      final currentHash = hashs.keys.toList()[i];
-      bool isFindSame = false;
-      for (var j = 0; j < hashs.length; j++) {
-        final nextHash = hashs.keys.toList()[j];
-        if (hashs[currentHash]!.id == hashs[nextHash]!.id) {
-          continue;
-        }
-        // final distance =
-        //     ImageHashUtil.calculateHammingDistance(currentHash, nextHash);
-        final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
-        print('distance.....$distance');
-        if (distance > 0.85) {
-          isFindSame = true;
-          print('找到相似图片.....');
-          print('找到相似图片.....');
-          //   // 添加组
-          if (groupIds.isEmpty) {
-            groupIds.add(hashs[currentHash]!.id);
-            groupIds.add(hashs[nextHash]!.id);
-          }
-        }
-      }
-      if (isFindSame) {
-        port.send({
-          "event": "sameEvent",
-          "data": SamePhotoGroup(
-                  id: hashs[currentHash]!.id,
-                  title: '${groupIds.length}',
-                  ids: groupIds)
-              .toJson(),
-        });
-      }
-
-      // int afterIndex = i + 1;
-      // final currentHash = hashs.keys.toList()[i];
-      // final groupIds = <String>[];
-      // int loop = 1;
-      // while (loop < afterCmpNum) {
-      //   if (i + loop < hashs.length) {
-      //     final nextHash = hashs.keys.toList()[i + loop];
-      //     final distance =
-      //         ImageHashUtil.calculateHammingDistance(currentHash, nextHash);
-      //     print('distance.....$distance');
-      //     if (distance < 5) {
-      //       print('找到相似图片.....');
-
-      //     }
-      //   }
-      //   loop++;
-      //   // final nextHash = hashs.keys.toList()[afterIndex];
-      //   // final distance =
-      //   //     ImageHashUtil.calculateHammingDistance(currentHash, nextHash);
-      //   // print('distance.....$distance');
-      //   // if (distance < 5) {
-      //   //   print('找到相似图片.....');
-      //   // }
-      //   // final nextImage = await assetItems[i + afterIndex].file;
-      //   // final similary =
-      //   //     await compareImages(src1: currentImage, src2: nextImage);
-      //   // if (similary < 0.5) {
-      //   //   print('找到相似图片.....');
-      //   //   // 添加组
-      //   //   if (groupIds.isEmpty) {
-      //   //     groupIds.add(assetItems[i].id);
-      //   //   }
-      //   //   groupIds.add(assetItems[i + afterIndex].id);
-      //   // }
-      // }
   }
+  double timeTotal = (DateTime.now().millisecondsSinceEpoch - start)/1000.0;
+  print("总耗时: $timeTotal");
+  /// 分组逻辑
+  List<Map<String, dynamic>> groups = [];
+  Set<String> useHashId = <String>{};
+  for (var i = 0; i < hashs.length; i++) {
+    final currentHash = hashs.keys.toList()[i];
+    final groupIds = <String>[];
+    if (useHashId.contains(currentHash)) continue;
+    useHashId.add(currentHash);
+    for (var j = i + 1; j < hashs.length; j++) {
+      final nextHash = hashs.keys.toList()[j];
+      if (useHashId.contains(nextHash)) continue;
+      final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
+      print('distance.....$distance');
+      if (distance > 0.82) {
+        useHashId.add(nextHash);
+        print('找到相似图片.....');
+        // 添加组
+        groupIds.add(hashs[currentHash]!.id);
+        groupIds.add(hashs[nextHash]!.id);
+      }
+    }
+    final index = hashs.keys.toList().indexOf(currentHash);
+    imageProcessProgress += (index / hashs.keys.length) * 33.33;
+    if (groupIds.isNotEmpty) {
+      groups.add(SamePhotoGroup(
+        id: groupIds.first,
+        title: '${groupIds.length}',
+        ids: groupIds,
+      ).toJson());
+      port.send({
+        "event": "sameEvent",
+        "data": SamePhotoGroup(
+          id: groupIds.first,
+          title: '${groupIds.length}',
+          ids: groupIds,
+        ).toJson(),
+      });
+    }
+  }
+  print('groups----->${groups.length}');
 }
 
 void main() async {
@@ -250,15 +201,10 @@ void main() async {
       globalStreamControler.add(ScreenPhotoEvent(data['data'], data['size']));
     } else if (data['event'] == "refresh") {
       globalStreamControler.add(RefreshEvent());
-    } else if (data['event'] == "test") {
-      hashs = data['data'];
-      globalStreamControler.add(RefreshEvent());
     }
-    // print("Received message from isolate $data");
   }, onError: (err) {
     print("Received message from isolate $err");
   });
-  // loadAllPhotosIsolate();
   runApp(MyApp(
     flutterI18nDelegate: flutterI18nDelegate,
   ));
