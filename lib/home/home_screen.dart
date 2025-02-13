@@ -645,8 +645,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Text(
             '$deviceName${AppUtils.i18Translate("home.diskSpace")}',
             style: const TextStyle(
-              fontSize: 16,
+              fontSize: 17.5,
               color: AppColor.textPrimary,
+              fontWeight: FontWeight.bold,
             ),
           ),
           Row(
