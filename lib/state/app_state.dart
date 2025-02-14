@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
@@ -12,6 +13,7 @@ import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
+import 'package:mmkv/mmkv.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:system_device_info/system_device_info.dart';
 
@@ -65,10 +67,10 @@ class AppState extends ChangeNotifier {
       if (event is AllPhotoLoadFinishEvent) {
         // 开启子线程检测数据
         // FlutterIsolate.spawn(spawnSamePhotosIsolate, globalPort.sendPort);
-        screenshotPhotoIsolate = await FlutterIsolate.spawn(
-            spawnScreenshotIsolate, globalPort.sendPort);
-        // bigPhotoIsolate = await FlutterIsolate.spawn(
-        //     spawnBigPhotosIsolate, globalPort.sendPort);
+        // screenshotPhotoIsolate = await FlutterIsolate.spawn(
+        //     spawnScreenshotIsolate, globalPort.sendPort);
+        bigPhotoIsolate = await FlutterIsolate.spawn(
+            spawnBigPhotosIsolate, globalPort.sendPort);
       } else if (event is SamePhotoEvent) {
         final group = event.group;
         // 获取所有图片id集合
@@ -147,6 +149,13 @@ class AppState extends ChangeNotifier {
         /// 发送二级页面事件
         globalStreamControler
             .add(SubScreenPhotoEvent(screenPhotos, event.totalSize));
+      } else if (event is BigPhotoDeleteEvent) {
+        for (var id in event.ids) {
+          bigPhotos.removeWhere((el) => el.assetEntity.id == id);
+        }
+        bigPhotoSize = max(bigPhotoSize -= event.deleteTotalSize, 0);
+        notifyListeners();
+        getDiskInfo();
       } else if (event is BigPhotoEvent) {
         // 获取所有图片id集合
         final newAssetList = <ImageAsset>[];
@@ -182,14 +191,23 @@ class AppState extends ChangeNotifier {
             sumSize += length;
           }
         }
+
+        final mmkv = MMKV.defaultMMKV();
+        final cache = mmkv.decodeString(imageCompressedCacheKey);
+        if (cache != null) {
+          final cacheList = jsonDecode(cache);
+          newAssetList
+              .removeWhere((el) => cacheList.contains(el.assetEntity.id));
+        }
         PhotoManagerTool.bigImageEntity.addAll(newAssetList);
         bigPhotos = PhotoManagerTool.bigImageEntity;
-        PhotoManagerTool.bigSumSize += sumSize;
-        bigPhotoSize = PhotoManagerTool.bigSumSize;
-        notifyListeners();
-
-        /// 发送二级页面事件
-        globalStreamControler.add(SubBigPhotoEvent(bigPhotos, sumSize));
+        if (bigPhotos.isNotEmpty) {
+          PhotoManagerTool.bigSumSize += sumSize;
+          bigPhotoSize = PhotoManagerTool.bigSumSize;
+          /// 发送二级页面事件
+          globalStreamControler.add(SubBigPhotoEvent(bigPhotos, sumSize));
+          notifyListeners();
+        }
       } else if (event is RefreshEvent) {
         notifyListeners();
       }

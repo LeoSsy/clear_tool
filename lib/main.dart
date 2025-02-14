@@ -6,6 +6,7 @@ import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
+import 'package:clear_tool/state/app_state.dart';
 import 'package:clear_tool/tabbar/tabbar_screen.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/image_hash_util.dart';
@@ -14,10 +15,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:mmkv/mmkv.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:image/image.dart' as img;
+import 'package:provider/provider.dart';
 
-// RootIsolateToken rootIsolateToken = RootIsolateToken.instance!;
 StreamController globalStreamControler = StreamController.broadcast();
 ReceivePort globalPort = ReceivePort();
 
@@ -26,6 +28,7 @@ FlutterIsolate? screenshotPhotoIsolate;
 
 /// 处理进度
 double imageProcessProgress = 0;
+
 
 @pragma('vm:entry-point')
 void spawnBigPhotosIsolate(SendPort port) async {
@@ -117,30 +120,33 @@ void spawnSamePhotosIsolate(SendPort port) async {
         final asset = assetItems[i];
         final bytes = await asset.thumbnailData;
         if (bytes != null) {
-          // final hash = ImageHashUtil.calculateAverageHash(img.decodeImage(bytes)!);
-          final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
+          final hash =
+              ImageHashUtil.calculateAverageHash(img.decodeImage(bytes)!);
+          // final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
           hashs[hash] = asset;
           print('hash.....$hash');
         }
       }
     }
   }
-  double timeTotal = (DateTime.now().millisecondsSinceEpoch - start)/1000.0;
+  double timeTotal = (DateTime.now().millisecondsSinceEpoch - start) / 1000.0;
   print("总耗时: $timeTotal");
+
   /// 分组逻辑
   List<Map<String, dynamic>> groups = [];
   Set<String> useHashId = <String>{};
   for (var i = 0; i < hashs.length; i++) {
     final currentHash = hashs.keys.toList()[i];
-    final groupIds = <String>[];
+    Set<String> groupIds = <String>{};
     if (useHashId.contains(currentHash)) continue;
     useHashId.add(currentHash);
-    for (var j = i + 1; j < hashs.length; j++) {
+    for (var j = 0; j < hashs.length; j++) {
       final nextHash = hashs.keys.toList()[j];
       if (useHashId.contains(nextHash)) continue;
+      if (currentHash == nextHash) continue;
       final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
       print('distance.....$distance');
-      if (distance > 0.82) {
+      if (distance > 0.8) {
         useHashId.add(nextHash);
         print('找到相似图片.....');
         // 添加组
@@ -150,18 +156,18 @@ void spawnSamePhotosIsolate(SendPort port) async {
     }
     final index = hashs.keys.toList().indexOf(currentHash);
     imageProcessProgress += (index / hashs.keys.length) * 33.33;
-    if (groupIds.isNotEmpty) {
+    if (groupIds.length >= 2) {
       groups.add(SamePhotoGroup(
         id: groupIds.first,
         title: '${groupIds.length}',
-        ids: groupIds,
+        ids: groupIds.toList(),
       ).toJson());
       port.send({
         "event": "sameEvent",
         "data": SamePhotoGroup(
           id: groupIds.first,
           title: '${groupIds.length}',
-          ids: groupIds,
+          ids: groupIds.toList(),
         ).toJson(),
       });
     }
@@ -184,6 +190,9 @@ void main() async {
     },
   );
   WidgetsFlutterBinding.ensureInitialized();
+  final rootDir = await MMKV.initialize();
+  print('MMKV for flutter with rootDir = $rootDir');
+
   if (Platform.isAndroid) {
     SystemUiOverlayStyle style = const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -217,28 +226,34 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        useMaterial3: false,
-        primarySwatch: getMaterialColor(AppColor.mainColor),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: AppColor.mainColor,
-        ),
-        brightness: Brightness.light,
-        pageTransitionsTheme: PageTransitionsTheme(
-          builders: Map<TargetPlatform, PageTransitionsBuilder>.fromIterable(
-            TargetPlatform.values,
-            value: (dynamic _) => const CupertinoPageTransitionsBuilder(),
+    return ChangeNotifierProvider(
+      create: (context) => AppState(),
+      builder: (context, child) {
+        return MaterialApp(
+          title: 'Flutter Demo',
+          theme: ThemeData(
+            useMaterial3: false,
+            primarySwatch: getMaterialColor(AppColor.mainColor),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: AppColor.mainColor,
+            ),
+            brightness: Brightness.light,
+            pageTransitionsTheme: PageTransitionsTheme(
+              builders:
+                  Map<TargetPlatform, PageTransitionsBuilder>.fromIterable(
+                TargetPlatform.values,
+                value: (dynamic _) => const CupertinoPageTransitionsBuilder(),
+              ),
+            ),
           ),
-        ),
-      ),
-      home: const TabbarScreen(),
-      localizationsDelegates: [
-        flutterI18nDelegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ],
+          home: const TabbarScreen(),
+          localizationsDelegates: [
+            flutterI18nDelegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+        );
+      },
     );
   }
 

@@ -32,6 +32,12 @@ PODS:
   - Mantle (2.2.0):
     - Mantle/extobjc (= 2.2.0)
   - Mantle/extobjc (2.2.0)
+  - MMKV (2.0.2):
+    - MMKVCore (~> 2.0.2)
+  - mmkv_ios (2.0.0):
+    - Flutter
+    - MMKV (< 2.1, >= 2.0.0)
+  - MMKVCore (2.0.2)
   - path_provider_foundation (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -61,6 +67,7 @@ DEPENDENCIES:
   - flutter_isolate (from `.symlinks/plugins/flutter_isolate/ios`)
   - fluttertoast (from `.symlinks/plugins/fluttertoast/ios`)
   - images_picker (from `.symlinks/plugins/images_picker/ios`)
+  - mmkv_ios (from `.symlinks/plugins/mmkv_ios/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - permission_handler_apple (from `.symlinks/plugins/permission_handler_apple/ios`)
   - photo_manager (from `.symlinks/plugins/photo_manager/ios`)
@@ -70,6 +77,8 @@ SPEC REPOS:
   trunk:
     - libwebp
     - Mantle
+    - MMKV
+    - MMKVCore
     - SDWebImage
     - SDWebImageWebPCoder
     - Toast
@@ -90,6 +99,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/fluttertoast/ios"
   images_picker:
     :path: ".symlinks/plugins/images_picker/ios"
+  mmkv_ios:
+    :path: ".symlinks/plugins/mmkv_ios/ios"
   path_provider_foundation:
     :path: ".symlinks/plugins/path_provider_foundation/darwin"
   permission_handler_apple:
@@ -109,6 +120,9 @@ SPEC CHECKSUMS:
   images_picker: fa9364e3a7d3083c49f865fcfb2b9e7cdc574d3a
   libwebp: 1786c9f4ff8a279e4dac1e8f385004d5fc253009
   Mantle: c5aa8794a29a022dfbbfc9799af95f477a69b62d
+  MMKV: 3eacda84cd1c4fc95cf848d3ecb69d85ed56006c
+  mmkv_ios: 8ccd8dda5021740bec0ff8ec8b468e62288a2a0a
+  MMKVCore: 508b4d3a8ce031f1b5c8bd235f0517fb3f4c73a9
   path_provider_foundation: 3784922295ac71e43754bd15e0653ccfd36a147c
   permission_handler_apple: 9878588469a2b0d0fc1e048d9f43605f92e6cec2
   photo_manager: ff695c7a1dd5bc379974953a2b5c0a293f7c4c8a

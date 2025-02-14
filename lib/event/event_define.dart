@@ -13,6 +13,12 @@ class BigPhotoEvent {
   BigPhotoEvent(this.id,this.totalSize);
 }
 
+class BigPhotoDeleteEvent {
+  final List<String> ids;
+  final int deleteTotalSize;
+  BigPhotoDeleteEvent(this.ids,this.deleteTotalSize);
+}
+
 /// 二级页面监听
 class SubBigPhotoEvent {
   final List<ImageAsset> assets;

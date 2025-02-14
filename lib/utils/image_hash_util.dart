@@ -1,7 +1,5 @@
 import 'dart:math';
-
 import 'package:image/image.dart' as img;
-import 'package:image_compare_2/image_compare_2.dart';
 
 class ImageHashUtil {
   // 计算平均哈希值
