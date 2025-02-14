@@ -14,6 +14,7 @@ dependencies:
 
   cupertino_icons: ^1.0.2
   flutter_i18n: ^0.36.2
+  provider: ^6.1.2
   flutter_hooks: ^0.20.5
   photo_manager: ^3.6.4
   image: ^4.0.17  # 用于解码和处理图片像素

@@ -28,6 +28,12 @@ class ScreenPhotoEvent {
   ScreenPhotoEvent(this.id,this.totalSize);
 }
 
+class ScreenPhotoDeleteEvent {
+  final List<String> ids;
+  final int deleteTotalSize;
+  ScreenPhotoDeleteEvent(this.ids,this.deleteTotalSize);
+}
+
 /// 二级页面监听
 class SubScreenPhotoEvent {
   final List<ImageAsset> assets;

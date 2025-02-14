@@ -1,305 +1,35 @@
-import 'dart:async';
-import 'dart:io';
 import 'dart:math';
+import 'package:circle_progress_bar/circle_progress_bar.dart' as cp;
 import 'package:clear_tool/const/colors.dart';
-import 'package:clear_tool/const/const.dart';
-import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/big_image/big_image_page.dart';
 import 'package:clear_tool/home/clear_page/clear_page.dart';
 import 'package:clear_tool/home/same_image/same_image_page.dart';
 import 'package:clear_tool/home/screen_shot/screen_shot_page.dart';
-import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
+import 'package:clear_tool/state/app_state.dart';
 import 'package:clear_tool/utils/app_utils.dart';
-import 'package:clear_tool/utils/permission_utils.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_i18n/flutter_i18n.dart';
-import 'package:flutter_isolate/flutter_isolate.dart';
-import 'package:photo_manager/photo_manager.dart';
-import 'package:system_device_info/system_device_info.dart';
-import 'package:circle_progress_bar/circle_progress_bar.dart' as cp;
+import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:provider/provider.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({Key? key}) : super(key: key);
-
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  ValueNotifier<double> valueNotifier = ValueNotifier(0);
-
-  String totalSize = '';
-  String useSize = '';
-  String deviceName = '';
-
-  List<AssetEntity> screenshots = [];
-  // List<AssetEntity> samePhotos = [];
-
-  /// 相似照片集合
-  List<SamePhotoGroup> samePhotos = [];
-
-  /// 相似照片容量
-  int samePhotoSize = 0;
-
-  /// 屏幕截图合集
-  List<ImageAsset> screenPhotos = [];
-
-  /// 屏幕截图照片容量
-  String screenPhotoSize = '';
-
-  /// 大图合集
-  List<ImageAsset> bigPhotos = [];
-
-  /// 处理大图标记
-  bool isBigProcessing = false;
-
-  /// 大图照片容量
-  String bigPhotoSize = '';
-
-  /// 进度圆颜色
-  Color color = Colors.white;
-
-  /// 进度圆背景图片
-  String progressBgImage = 'assets/images/home/blue_progress_bg.png';
-
-  /// 订阅事件
-  late StreamSubscription _streamSubscription;
-
-  /// 开启定时器 检查存储空间
-  late Timer diskTimer;
-
-  @override
-  void initState() {
-    super.initState();
-    valueNotifier.addListener(() {
-      setState(() {});
-    });
-    changeLanguage();
-    getDiskInfo();
-    getScreenshots();
-  }
-
-  @override
-  void dispose() {
-    _streamSubscription.cancel();
-    diskTimer.cancel();
-    valueNotifier.removeListener(() {});
-    super.dispose();
-  }
-
-  void getScreenshots() async {
-    _streamSubscription = globalStreamControler.stream.listen((event) async {
-      if (event is AllPhotoLoadFinishEvent) {
-        // 开启子线程检测数据
-        FlutterIsolate.spawn(spawnSamePhotosIsolate, globalPort.sendPort);
-        screenshotPhotoIsolate = await FlutterIsolate.spawn(
-            spawnScreenshotIsolate, globalPort.sendPort);
-        bigPhotoIsolate = await FlutterIsolate.spawn(
-            spawnBigPhotosIsolate, globalPort.sendPort);
-      } else if (event is SamePhotoEvent) {
-        final group = event.group;
-        // 获取所有图片id集合
-        final newAssetList = <SamePhotoGroup>[];
-        if (group.ids != null) {
-          int sumSize = 0;
-          for (var assetId in group.ids!) {
-            if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(assetId)) {
-              final assetEntity =
-                  PhotoManagerTool.allPhotoAssetsIdMaps[assetId]!;
-              final file = await assetEntity.originFile;
-              if (file != null) {
-                final length = await file.length();
-                final thumbnailData = await assetEntity.thumbnailData;
-                group.assets.add(ImageAsset(assetEntity)
-                  ..originalFilePath = file.path
-                  ..thumnailBytes = thumbnailData
-                  ..length = length);
-                newAssetList.add(group);
-                sumSize += length;
-              }
-            }
-          }
-          for (var newAsset in newAssetList) {
-            final sameCache =
-                samePhotos.where((el) => el.id == newAsset.id).toList();
-            if (sameCache.isEmpty) {
-              samePhotos.add(newAsset);
-            }
-          }
-          setState(() {
-            samePhotoSize += sumSize;
-            PhotoManagerTool.sameImageEntity = samePhotos;
-            PhotoManagerTool.samePhotoSize = samePhotoSize;
-          });
-        }
-      } else if (event is ScreenPhotoEvent) {
-        // 获取所有图片id集合
-        final newAssetList = <ImageAsset>[];
-        if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(event.id)) {
-          final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
-          final file = await assetEntity.originFile;
-          if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailData;
-            newAssetList.add(ImageAsset(assetEntity)
-              ..originalFilePath = file.path
-              ..thumnailBytes = thumbnailData);
-          }
-        } else {
-          PhotoManagerTool.allPhotoAssetsIdMaps[event.id] = PhotoManagerTool
-              .allPhotoAssets
-              .where((el) => el.id == event.id)
-              .toList()
-              .first;
-          final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
-          final file = await assetEntity.originFile;
-          if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailData;
-            newAssetList.add(ImageAsset(assetEntity)
-              ..originalFilePath = file.path
-              ..thumnailBytes = thumbnailData);
-          }
-        }
-        screenPhotos.addAll(newAssetList);
-        PhotoManagerTool.screenShotImageEntity = screenPhotos;
-        setState(() {
-          screenPhotoSize = AppUtils.fileSizeFormat(event.totalSize);
-        });
-
-        /// 发送二级页面事件
-        globalStreamControler
-            .add(SubScreenPhotoEvent(screenPhotos, event.totalSize));
-      } else if (event is BigPhotoEvent) {
-        // 获取所有图片id集合
-        final newAssetList = <ImageAsset>[];
-        if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(event.id)) {
-          final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
-          final file = await assetEntity.originFile;
-          if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailData;
-            newAssetList.add(ImageAsset(assetEntity)
-              ..originalFilePath = file.path
-              ..thumnailBytes = thumbnailData);
-          }
-        } else {
-          PhotoManagerTool.allPhotoAssetsIdMaps[event.id] = PhotoManagerTool
-              .allPhotoAssets
-              .where((el) => el.id == event.id)
-              .toList()
-              .first;
-          final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
-          final file = await assetEntity.originFile;
-          if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailData;
-            newAssetList.add(ImageAsset(assetEntity)
-              ..originalFilePath = file.path
-              ..thumnailBytes = thumbnailData);
-          }
-        }
-        int sumSize = 0;
-        for (var asset in newAssetList) {
-          final originalFilePath = asset.originalFilePath;
-          if (originalFilePath != null) {
-            final length = await File(originalFilePath).length();
-            sumSize += length;
-          }
-        }
-        PhotoManagerTool.bigImageEntity.addAll(newAssetList);
-        bigPhotos = PhotoManagerTool.bigImageEntity;
-        setState(() {
-          PhotoManagerTool.bigSumSize += sumSize;
-          bigPhotoSize = AppUtils.fileSizeFormat(PhotoManagerTool.bigSumSize);
-        });
-
-        /// 发送二级页面事件
-        globalStreamControler.add(SubBigPhotoEvent(bigPhotos, sumSize));
-      } else if (event is RefreshEvent) {
-        setState(() {});
-      }
-    });
-    Future.delayed(const Duration(milliseconds: 300), () async {
-      // 检查权限
-      final havePermission = await PermissionUtils.checkPhotosPermisson(
-          permisinUsingInfo: AppUtils.i18Translate(
-              'common.dialog.use_info_photo',
-              context: AppUtils.globalContext));
-      if (havePermission) {
-        PhotoManagerTool.allPhotoAssets = [];
-        final assetPaths =
-            await PhotoManager.getAssetPathList(type: RequestType.image);
-        // 获取所有图片资源对象
-        for (var album in assetPaths) {
-          final count = await album.assetCountAsync;
-          if (count > 0) {
-            final assetItems =
-                await album.getAssetListRange(start: 0, end: count);
-            PhotoManagerTool.allPhotoAssets.addAll(assetItems);
-            // id 映射
-            for (var asset in assetItems) {
-              if (!PhotoManagerTool.allPhotoAssetsIdMaps
-                  .containsKey(asset.id)) {
-                PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
-              }
-            }
-          }
-        }
-        // 所有图片加载完成 发送通知
-        globalStreamControler.add(AllPhotoLoadFinishEvent());
-      }
-    });
-  }
-
-  void changeLanguage() async {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      final currentLang = FlutterI18n.currentLocale(context)!;
-      final nextLang = currentLang.languageCode == 'zh'
-          ? const Locale('zh')
-          : const Locale('en');
-      await FlutterI18n.refresh(context, nextLang);
-      setState(() {});
-    });
-  }
-
-  void getDiskInfo() async {
-    final tz = await SystemDeviceInfo.totalSize();
-    if (tz != null) {
-      totalSize = AppUtils.fileSizeFormat(tz);
-    }
-    final fz = await SystemDeviceInfo.freeSize();
-    if (fz != null) {
-      useSize = AppUtils.fileSizeFormat(tz! - fz);
-      final value = ((tz - fz) / tz) * 100;
-      if (value > 90) {
-        color = const Color(0xffEC5C0C);
-        progressBgImage = 'assets/images/home/red_progress_bg.png';
-      } else if (value > 70) {
-        color = const Color(0xffE7950C);
-        progressBgImage = 'assets/images/home/orange_progress_bg.png';
-      } else if (value > 30) {
-        color = const Color(0xffDAD31B);
-        progressBgImage = 'assets/images/home/yellow_progress_bg.png';
-      } else {
-        color = AppColor.mainColor;
-        progressBgImage = 'assets/images/home/blue_progress_bg.png';
-      }
-      valueNotifier.value = value;
-      setState(() {});
-    }
-
-    if (Platform.isAndroid) {
-      final anInfo = await DeviceInfoPlugin().androidInfo;
-      deviceName = anInfo.model;
-    } else {
-      final iosInfo = await DeviceInfoPlugin().iosInfo;
-      deviceName = iosInfo.name ?? '';
-    }
-    setState(() {});
-  }
+class HomeScreen extends HookWidget {
+  const HomeScreen({super.key});
+  // void changeLanguage() async {
+  //   WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+  //     final currentLang = FlutterI18n.currentLocale(context)!;
+  //     final nextLang = currentLang.languageCode == 'zh'
+  //         ? const Locale('zh')
+  //         : const Locale('en');
+  //     await FlutterI18n.refresh(context, nextLang);
+  //     setState(() {});
+  //   });
+  // }
 
   @override
   Widget build(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
+    useListenable(appState);
     AppUtils.globalContext = context;
     return Scaffold(
       backgroundColor: const Color(0xffF9F9F9),
@@ -307,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
         slivers: [
           SliverList.list(
             children: [
-              _buildCircleProgressBar(),
+              _buildCircleProgressBar(context),
               Padding(
                 padding: const EdgeInsets.only(left: 12),
                 child: Text(
@@ -322,36 +52,13 @@ class _HomeScreenState extends State<HomeScreen> {
               _buidManualItem(context),
             ],
           ),
-          // SliverPadding(
-          //   padding: const EdgeInsets.symmetric(horizontal: 12),
-          //   sliver: SliverGrid.builder(
-          //     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          //       crossAxisCount: 4,
-          //       mainAxisSpacing: 5,
-          //       crossAxisSpacing: 5,
-          //     ),
-          //     itemCount: hashs.keys.toList().length,
-          //     itemBuilder: (context, index) {
-          //       final assets = hashs.values.toList()[index];
-          //       return Stack(
-          //         children: [
-          //           ClipRRect(
-          //               borderRadius: BorderRadius.circular(4),
-          //               child: Image.file(
-          //                 File(assets),
-          //                 fit: BoxFit.cover,
-          //               )),
-          //         ],
-          //       );
-          //     },
-          //   ),
-          // )
         ],
       ),
     );
   }
 
   Widget _buidManualItem(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
@@ -411,15 +118,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${samePhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                '${appState.samePhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
                                   fontSize: 8.autoSize,
                                   color: const Color(0xff5E1FB2),
                                 ),
                               ),
                               Text(
-                                samePhotoSize > 0
-                                    ? AppUtils.fileSizeFormat(samePhotoSize)
+                                appState.samePhotoSize > 0
+                                    ? AppUtils.fileSizeFormat(appState.samePhotoSize)
                                     : '0KB',
                                 style: TextStyle(
                                   fontSize: 8.autoSize,
@@ -505,7 +212,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               ),
                               Text(
-                                bigPhotoSize.isNotEmpty ? bigPhotoSize : '0KB',
+                                appState.bigPhotoSize > 0 ? AppUtils.fileSizeFormat(appState.bigPhotoSize) : '0KB',
                                 style: TextStyle(
                                   fontSize: 8.autoSize!,
                                   color: const Color(0xff1C6EAA),
@@ -584,15 +291,15 @@ class _HomeScreenState extends State<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${screenPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                '${appState.screenPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
                                   fontSize: 8.autoSize!,
                                   color: const Color(0xff1B5FC4),
                                 ),
                               ),
                               Text(
-                                screenPhotoSize.isNotEmpty
-                                    ? screenPhotoSize
+                                appState.screenPhotoSize > 0
+                                    ? AppUtils.fileSizeFormat(appState.screenPhotoSize)
                                     : '0KB',
                                 style: TextStyle(
                                   fontSize: 8.autoSize!,
@@ -621,12 +328,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Container _buildCircleProgressBar() {
-    AppUtils.screenW = MediaQuery.of(context).size.width;
+  Container _buildCircleProgressBar(BuildContext context) {
+    final appState = Provider.of<AppState>(context);
     final circleSize = 250.autoSize!;
     return Container(
       padding: EdgeInsets.only(
-          top: MediaQuery.of(context).padding.top, left: 12, right: 12),
+        top: MediaQuery.of(context).padding.top,
+        left: 12,
+        right: 12,
+      ),
       height: 369.autoSize,
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(8)),
@@ -643,7 +353,7 @@ class _HomeScreenState extends State<HomeScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '$deviceName${AppUtils.i18Translate("home.diskSpace")}',
+            '${appState.deviceName}${AppUtils.i18Translate("home.diskSpace")}',
             style: const TextStyle(
               fontSize: 17.5,
               color: AppColor.textPrimary,
@@ -653,14 +363,14 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             children: [
               Text(
-                '${AppUtils.i18Translate("home.useSpace")}$useSize,',
+                '${AppUtils.i18Translate("home.useSpace")}${appState.useSize},',
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColor.textSecondary,
                 ),
               ),
               Text(
-                '${AppUtils.i18Translate("home.totalSpace")}$totalSize',
+                '${AppUtils.i18Translate("home.totalSpace")}${appState.totalSize}',
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColor.textSecondary,
@@ -674,7 +384,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 alignment: Alignment.center,
                 children: [
                   Image.asset(
-                    progressBgImage,
+                    appState.progressBgImage,
                     width: 260.autoSize!,
                     height: 260.autoSize!,
                     fit: BoxFit.cover,
@@ -693,10 +403,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Transform.rotate(
                       angle: 90 * pi / 180,
                       child: cp.CircleProgressBar(
-                        foregroundColor: color,
+                        foregroundColor: appState.color,
                         backgroundColor: Colors.white,
                         strokeWidth: 14,
-                        value: valueNotifier.value / 100,
+                        value: appState.circleProgress / 100,
                       ),
                     ),
                   ),
@@ -715,7 +425,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           WidgetSpan(
                             alignment: PlaceholderAlignment.bottom,
                             child: Text(
-                              valueNotifier.value.toStringAsFixed(0),
+                              appState.circleProgress.toStringAsFixed(0),
                               style: const TextStyle(
                                 fontSize: 43,
                                 color: AppColor.textPrimary,
