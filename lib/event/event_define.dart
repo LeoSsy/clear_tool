@@ -5,6 +5,12 @@ class SamePhotoEvent {
   SamePhotoEvent(this.group);
 }
 
+class SamePhotoDeleteEvent {
+  final List<String> ids;
+  final int deleteTotalSize;
+  SamePhotoDeleteEvent(this.ids,this.deleteTotalSize);
+}
+
 
 /// 大图event
 class BigPhotoEvent {

@@ -87,70 +87,81 @@ class ImageHashUtil {
     return matches / hash1.length;
   }
 
-  // 计算感知哈希值
+  // 改进的感知哈希算法（使用DCT） 0.75 以上
   static String calculatePHash(img.Image image) {
-    // 1. 调整图像大小为 32x32
-    img.Image resizedImage = img.copyResize(image, width: 32, height: 32);
-    // 2. 将图像转换为灰度图
-    img.Image grayImage = img.grayscale(resizedImage);
-    // 3. 进行离散余弦变换（DCT）
-    List<List<double>> dctMatrix = _dct(grayImage);
-    // 4. 取 DCT 变换结果的左上角 8x8 区域（忽略直流分量）
-    List<double> lowFrequencyComponents = [];
+
+    // 1. 调整尺寸为32x32（保留更多特征）
+    final resizedImage = img.copyResize(image, width: 32, height: 32);
+
+    // 2. 转换为灰度图
+    final grayImage = img.grayscale(resizedImage);
+
+    // 3. 计算DCT（离散余弦变换）
+    final dctMatrix = _computeDCT(grayImage);
+
+    // 4. 取左上8x8区域（保留低频特征）
+    final hashValues = <double>[];
     for (int y = 0; y < 8; y++) {
       for (int x = 0; x < 8; x++) {
-        if (x != 0 || y != 0) {
-          lowFrequencyComponents.add(dctMatrix[y][x]);
-        }
+        hashValues.add(dctMatrix[y][x]); // 收集左上8x8区域的哈希值
       }
     }
-    // 5. 计算这些低频分量的中位数
-    double median = _calculateMedian(lowFrequencyComponents);
-    // 6. 根据中位数生成 pHash 值
-    int pHash = 0;
-    for (int i = 0; i < lowFrequencyComponents.length; i++) {
-      if (lowFrequencyComponents[i] > median) {
-        pHash |= (1 << i);
-      }
-    }
-    return pHash.toString();
+
+    // 5. 计算中位数
+    final median = _calculateMedian2(hashValues);
+
+    // 6. 生成二进制哈希
+    return hashValues.map((v) => v > median ? '1' : '0').join(''); // 根据哈希值和中位数生成二进制哈希字符串
   }
 
-// 进行离散余弦变换（DCT）
-  static List<List<double>> _dct(img.Image image) {
-    int width = image.width;
-    int height = image.height;
-    List<List<double>> dctMatrix =
-        List.generate(height, (_) => List.filled(width, 0.0));
-    double c(int k) => (k == 0) ? 1 / sqrt(2) : 1;
-    for (int u = 0; u < height; u++) {
-      for (int v = 0; v < width; v++) {
-        double sum = 0;
-        for (int y = 0; y < height; y++) {
-          for (int x = 0; x < width; x++) {
-            img.Pixel pixel = image.getPixel(x, y);
-            double pixelValue =
-                img.getLuminanceRgb(pixel.r, pixel.g, pixel.b).toDouble();
-            sum += pixelValue *
-                cos((2 * y + 1) * u * pi / (2 * height)) *
-                cos((2 * x + 1) * v * pi / (2 * width));
+  // 计算中位数
+  static double _calculateMedian2(List<double> list) {
+    final sorted = List<double>.from(list)..sort(); // 复制并排序列表
+    final mid = sorted.length ~/ 2; // 计算中位数索引
+    return sorted.length % 2 == 1 // 如果列表长度是奇数
+        ? sorted[mid] // 返回中间值
+        : (sorted[mid - 1] + sorted[mid]) / 2; // 如果列表长度是偶数，返回中间两个值的平均值
+  }
+
+
+  // DCT计算实现
+  static List<List<double>> _computeDCT(img.Image image) {
+    final size = image.width; // 获取图片尺寸（假设图片是正方形的）
+    final matrix = List.generate(size, (y) => List.generate(size, (x) {
+      final pixel = image.getPixel(x, y); // 获取图片像素
+      return (pixel.r * 0.299 + // 计算灰度值
+          pixel.g * 0.587 +
+          pixel.b * 0.114) / 255;
+    }));
+
+    return _applyDCT(matrix); // 应用DCT变换
+  }
+
+
+  // 应用二维DCT变换
+  static List<List<double>> _applyDCT(List<List<double>> matrix) {
+    final size = matrix.length; // 获取矩阵尺寸
+    final result = List.generate(size, (_) => List<double>.filled(size, 0)); // 初始化结果矩阵
+
+    final piOverTwoSize = pi / (2 * size); // 计算常量 pi / (2 * size)
+
+    for (int u = 0; u < size; u++) {
+      final cu = u == 0 ? 1 / sqrt(2) : 1.0; // 计算常量 cu
+      for (int v = 0; v < size; v++) {
+        final cv = v == 0 ? 1 / sqrt(2) : 1.0; // 计算常量 cv
+        double sum = 0.0;
+        for (int x = 0; x < size; x++) {
+          final xuTerm = (2 * x + 1) * u; // 计算 xuTerm
+          for (int y = 0; y < size; y++) {
+            sum += matrix[x][y] * // 计算DCT变换中的和
+                cos(xuTerm * piOverTwoSize) * // 计算 cos(xuTerm * pi / (2 * size))
+                cos((2 * y + 1) * v * piOverTwoSize); // 计算 cos((2 * y + 1) * v * pi / (2 * size))
           }
         }
-        dctMatrix[u][v] = 0.25 * c(u) * c(v) * sum;
+        result[u][v] = 0.25 * cu * cv * sum; // 计算结果矩阵中的值
       }
     }
-    return dctMatrix;
-  }
-
-// 计算列表的中位数
-  static double _calculateMedian(List<double> values) {
-    values.sort();
-    int length = values.length;
-    if (length % 2 == 0) {
-      return (values[length ~/ 2 - 1] + values[length ~/ 2]) / 2;
-    } else {
-      return values[length ~/ 2];
-    }
+    return result; // 返回结果矩阵
   }
 }
 

@@ -66,11 +66,13 @@ class AppState extends ChangeNotifier {
     _streamSubscription = globalStreamControler.stream.listen((event) async {
       if (event is AllPhotoLoadFinishEvent) {
         // 开启子线程检测数据
-        // FlutterIsolate.spawn(spawnSamePhotosIsolate, globalPort.sendPort);
-        // screenshotPhotoIsolate = await FlutterIsolate.spawn(
-        //     spawnScreenshotIsolate, globalPort.sendPort);
+        FlutterIsolate.spawn(spawnSamePhotosIsolate, globalPort.sendPort);
+        screenshotPhotoIsolate = await FlutterIsolate.spawn(
+            spawnScreenshotIsolate, globalPort.sendPort);
         bigPhotoIsolate = await FlutterIsolate.spawn(
             spawnBigPhotosIsolate, globalPort.sendPort);
+      } else if (event is SamePhotoDeleteEvent) {
+
       } else if (event is SamePhotoEvent) {
         final group = event.group;
         // 获取所有图片id集合

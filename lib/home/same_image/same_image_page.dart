@@ -59,6 +59,30 @@ class _SameImagePageState extends State<SameImagePage> {
     });
   }
 
+  allSelectedPhotos(bool isAllSel) {
+    // if (isAllSel) {
+    //   // selPhotos = samePhotos.;
+    //   for (var group in samePhotos) {
+    //     if (group.ids != null && group.ids!.isNotEmpty) {
+    //       for (var i = 0; i < group.ids!.length; i++) {
+    //         if (i != 0) {
+              
+    //         }
+    //       }
+    //     }
+    //   }
+    // } else {
+    //   bigPhotos.map((e) {
+    //     e.selected = false;
+    //     return e;
+    //   }).toList();
+    //   selPhotos = [];
+    // }
+    // if (mounted) {
+    //   setState(() {});
+    // }
+  }
+
   @override
   void dispose() {
     streamSubscription?.cancel();
@@ -83,7 +107,9 @@ class _SameImagePageState extends State<SameImagePage> {
         ),
         centerTitle: true,
         title: Text(
-          '${AppUtils.i18Translate('home.samePhoto', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})',
+          samePhotos.isNotEmpty
+              ? '${AppUtils.i18Translate('home.samePhoto', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
+              : AppUtils.i18Translate('home.samePhoto', context: context),
           style: const TextStyle(fontSize: 15, color: AppColor.textPrimary),
         ),
         elevation: 0,

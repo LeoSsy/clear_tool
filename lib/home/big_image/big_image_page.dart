@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
@@ -11,19 +9,13 @@ import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
-import 'package:clear_tool/state/app_state.dart';
 import 'package:clear_tool/utils/app_utils.dart';
-import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:clear_tool/utils/toast_utils.dart';
 import 'package:clear_tool/widget/empty_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:mmkv/mmkv.dart';
 import 'package:photo_manager/photo_manager.dart';
-import 'package:image/image.dart' as img;
-import 'package:provider/provider.dart';
-import 'package:system_device_info/system_device_info.dart';
 
 class BigImagePage extends StatefulWidget {
   const BigImagePage({Key? key}) : super(key: key);

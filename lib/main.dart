@@ -121,7 +121,7 @@ void spawnSamePhotosIsolate(SendPort port) async {
         final bytes = await asset.thumbnailData;
         if (bytes != null) {
           final hash =
-              ImageHashUtil.calculateAverageHash(img.decodeImage(bytes)!);
+              ImageHashUtil.calculatePHash(img.decodeImage(bytes)!);
           // final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
           hashs[hash] = asset;
           print('hash.....$hash');
