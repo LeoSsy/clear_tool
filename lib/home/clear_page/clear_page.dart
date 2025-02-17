@@ -121,7 +121,7 @@ class ClearPage extends HookWidget {
                             ),
                           ),
                           Text(
-                            '（${appState.samePhotos?.length ?? 0} ${AppUtils.i18Translate('home.aImage', context: context)}, ${AppUtils.fileSizeFormat(appState.samePhotoSize)}）',
+                            '（${appState.samePhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}, ${AppUtils.fileSizeFormat(appState.samePhotoSize)}）',
                             style: const TextStyle(
                               fontSize: 11,
                               color: AppColor.subTitle999,
@@ -257,7 +257,7 @@ class ClearPage extends HookWidget {
                             ),
                           ),
                           Text(
-                            '（${appState.bigPhotos?.length ?? 0} ${AppUtils.i18Translate('home.aImage', context: context)}, ${AppUtils.fileSizeFormat(appState.bigPhotoSize)}）',
+                            '（${appState.bigPhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}, ${AppUtils.fileSizeFormat(appState.bigPhotoSize)}）',
                             style: const TextStyle(
                               fontSize: 11,
                               color: AppColor.subTitle999,
@@ -392,7 +392,7 @@ class ClearPage extends HookWidget {
                             ),
                           ),
                           Text(
-                            '（${appState.screenPhotos?.length ?? 0} ${AppUtils.i18Translate('home.aImage', context: context)}, ${AppUtils.fileSizeFormat(appState.screenPhotoSize)}）',
+                            '（${appState.screenPhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}, ${AppUtils.fileSizeFormat(appState.screenPhotoSize)}）',
                             style: const TextStyle(
                               fontSize: 11,
                               color: AppColor.subTitle999,
