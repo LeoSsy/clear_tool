@@ -275,7 +275,8 @@ class AppState extends ChangeNotifier {
     });
     changeLanguage();
     Future.delayed(const Duration(milliseconds: 300), () async {
-      // 检查权限
+      WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+          // 检查权限
       final havePermission = await PermissionUtils.checkPhotosPermisson(
           permisinUsingInfo: AppUtils.i18Translate(
               'common.dialog.use_info_photo',
@@ -303,6 +304,8 @@ class AppState extends ChangeNotifier {
         // 所有图片加载完成 发送通知
         globalStreamControler.add(AllPhotoLoadFinishEvent());
       }
+      });
+    
     });
   }
 
