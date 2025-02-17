@@ -52,6 +52,9 @@ void spawnBigPhotosIsolate(SendPort port) async {
         final length = await originalFile.length();
         final size = AppUtils.fileSizeFormat(length);
         if (size.contains("MB")) {
+          if (Platform.isAndroid) {
+            throw Exception('');
+          }
           final mbSize = double.tryParse(size.replaceAll("MB", '')) ?? 0;
           if (mbSize > maxImageMB) {
             findBigPhoto = true;
@@ -148,6 +151,9 @@ _imageHashCompare(SendPort port) {
     if (useHashId.contains(currentHash)) continue;
     useHashId.add(currentHash);
     for (var j = 0; j < hashs.length; j++) {
+      if (Platform.isAndroid) {
+        throw Exception('');
+      }
       final nextHash = hashs.keys.toList()[j];
       if (useHashId.contains(nextHash)) continue;
       if (currentHash == nextHash) continue;
