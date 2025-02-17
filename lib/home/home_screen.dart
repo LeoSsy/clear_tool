@@ -291,7 +291,7 @@ class HomeScreen extends HookWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${appState.screenPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                '${appState.screenPhotos?.length ?? 0}${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
                                   fontSize: 8.autoSize!,
                                   color: const Color(0xff1B5FC4),

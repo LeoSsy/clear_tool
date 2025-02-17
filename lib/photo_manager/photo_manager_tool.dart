@@ -25,6 +25,9 @@ class PhotoManagerTool {
   /// 是否加载相似图片中
   static bool isLoadingSamePhotos = true;
 
+  /// 任务进度
+ static double progress = 0.0;
+
   /// 获取所有图片数量
   static Future<int> getPhotoCount() async {
     final List<AssetPathEntity> assets =

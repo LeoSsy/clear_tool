@@ -9,7 +9,7 @@
     "screenshot" : " Screenshot ",
     "sheet" :  "sheet",
     "recognition" :  "Under detection",
-    "recognitionFinish" :  "Detection completed",
+    "recognitionOK" :  "Detection completed",
     "aImage" :  "picture",
     "oversizedImage" :  "Too large image",
     "selected" :  "Selected",
@@ -20,7 +20,12 @@
     "deniedPhotoPermission" : " I currently do not have access to the photo album. Would you like to go and open it",
     "deletConfirm" :  "Are you sure to delete?",
     "delete" :  "Delete",
+    "deleteOK" :  "Delete successfully",
+    "deleteErr" :  "Delete failed",
     "confirm" :  "Confirm",
     "cancle" :  "Cancel",
-    "gotoClear" : " Go clean up"
+    "gotoClear" : " Go clean up",
+    "zipOk" : "Compression completed",
+    "zipErr" : "Compression failed",
+    "caculateSize" : "Under calculation"
     }

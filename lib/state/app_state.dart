@@ -25,20 +25,21 @@ class AppState extends ChangeNotifier {
   /// 使用进度
   double circleProgress = 0;
 
-  /// 相似照片集合
-  List<SamePhotoGroup> samePhotos = [];
+  /// 相似照片组集合
+  List<SamePhotoGroup> sameGroupPhotos = [];
+  List<ImageAsset>? samePhotos;
 
   /// 相似照片容量
   int samePhotoSize = 0;
 
   /// 屏幕截图合集
-  List<ImageAsset> screenPhotos = [];
+  List<ImageAsset>? screenPhotos;
 
   /// 屏幕截图照片容量
   int screenPhotoSize = 0;
 
   /// 大图合集
-  List<ImageAsset> bigPhotos = [];
+  List<ImageAsset>? bigPhotos;
 
   /// 处理大图标记
   bool isBigProcessing = false;
@@ -54,6 +55,10 @@ class AppState extends ChangeNotifier {
 
   /// 订阅事件
   late StreamSubscription _streamSubscription;
+
+  double bigPhotoProgress = 0;
+  double screenshotPhotoProgress = 0;
+  double samePhotoProgress = 0;
 
   @override
   void dispose() {
@@ -73,7 +78,7 @@ class AppState extends ChangeNotifier {
             spawnBigPhotosIsolate, globalPort.sendPort);
       } else if (event is SamePhotoDeleteEvent) {
         for (var id in event.ids) {
-          for (var group in samePhotos) {
+          for (var group in sameGroupPhotos) {
             group.assets.removeWhere((el) => el.assetEntity.id == id);
           }
         }
@@ -81,10 +86,16 @@ class AppState extends ChangeNotifier {
         notifyListeners();
         getDiskInfo();
       } else if (event is SamePhotoEvent) {
+        if (event.group == null) {
+          samePhotos = [];
+          notifyListeners();
+          return;
+        }
+        samePhotos ??= [];
         final group = event.group;
         // 获取所有图片id集合
         final newAssetList = <SamePhotoGroup>[];
-        if (group.ids != null) {
+        if (group!.ids != null) {
           for (var assetId in group.ids!) {
             if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(assetId)) {
               final assetEntity =
@@ -103,31 +114,38 @@ class AppState extends ChangeNotifier {
           }
           for (var newAsset in newAssetList) {
             final sameCache =
-                samePhotos.where((el) => el.id == newAsset.id).toList();
+                sameGroupPhotos.where((el) => el.id == newAsset.id).toList();
             if (sameCache.isEmpty) {
-              samePhotos.add(newAsset);
+              samePhotos?.addAll(newAsset.assets);
+              sameGroupPhotos.add(newAsset);
             }
           }
           int sumSize = 0;
-          for (var group in samePhotos) {
+          for (var group in sameGroupPhotos) {
             for (var asset in group.assets) {
               sumSize += asset.length;
             }
           }
           samePhotoSize = sumSize;
-          PhotoManagerTool.sameImageEntity = samePhotos;
+          PhotoManagerTool.sameImageEntity = sameGroupPhotos;
           PhotoManagerTool.samePhotoSize = samePhotoSize;
 
           notifyListeners();
         }
       } else if (event is ScreenPhotoDeleteEvent) {
         for (var id in event.ids) {
-          screenPhotos.removeWhere((el) => el.assetEntity.id == id);
+          screenPhotos?.removeWhere((el) => el.assetEntity.id == id);
         }
         screenPhotoSize = max(screenPhotoSize -= event.deleteTotalSize, 0);
         notifyListeners();
         getDiskInfo();
       } else if (event is ScreenPhotoEvent) {
+        if (event.id == null) {
+          screenPhotos = [];
+          notifyListeners();
+          return;
+        }
+        screenPhotos ??= [];
         // 获取所有图片id集合
         final newAssetList = <ImageAsset>[];
         if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(event.id)) {
@@ -140,7 +158,7 @@ class AppState extends ChangeNotifier {
               ..thumnailBytes = thumbnailData);
           }
         } else {
-          PhotoManagerTool.allPhotoAssetsIdMaps[event.id] = PhotoManagerTool
+          PhotoManagerTool.allPhotoAssetsIdMaps[event.id!] = PhotoManagerTool
               .allPhotoAssets
               .where((el) => el.id == event.id)
               .toList()
@@ -154,22 +172,24 @@ class AppState extends ChangeNotifier {
               ..thumnailBytes = thumbnailData);
           }
         }
-        screenPhotos.addAll(newAssetList);
-        PhotoManagerTool.screenShotImageEntity = screenPhotos;
+        screenPhotos?.addAll(newAssetList);
+        PhotoManagerTool.screenShotImageEntity = screenPhotos ?? [];
         screenPhotoSize = event.totalSize;
         notifyListeners();
-
-        /// 发送二级页面事件
-        globalStreamControler
-            .add(SubScreenPhotoEvent(screenPhotos, event.totalSize));
       } else if (event is BigPhotoDeleteEvent) {
         for (var id in event.ids) {
-          bigPhotos.removeWhere((el) => el.assetEntity.id == id);
+          bigPhotos?.removeWhere((el) => el.assetEntity.id == id);
         }
         bigPhotoSize = max(bigPhotoSize -= event.deleteTotalSize, 0);
         notifyListeners();
         getDiskInfo();
       } else if (event is BigPhotoEvent) {
+        if (event.id == null) {
+          bigPhotos = [];
+          notifyListeners();
+          return;
+        }
+        bigPhotos ??= [];
         // 获取所有图片id集合
         final newAssetList = <ImageAsset>[];
         if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(event.id)) {
@@ -182,7 +202,7 @@ class AppState extends ChangeNotifier {
               ..thumnailBytes = thumbnailData);
           }
         } else {
-          PhotoManagerTool.allPhotoAssetsIdMaps[event.id] = PhotoManagerTool
+          PhotoManagerTool.allPhotoAssetsIdMaps[event.id!] = PhotoManagerTool
               .allPhotoAssets
               .where((el) => el.id == event.id)
               .toList()
@@ -214,15 +234,25 @@ class AppState extends ChangeNotifier {
         }
         PhotoManagerTool.bigImageEntity.addAll(newAssetList);
         bigPhotos = PhotoManagerTool.bigImageEntity;
-        if (bigPhotos.isNotEmpty) {
+        if (bigPhotos!.isNotEmpty) {
           PhotoManagerTool.bigSumSize += sumSize;
           bigPhotoSize = PhotoManagerTool.bigSumSize;
-
-          /// 发送二级页面事件
-          globalStreamControler.add(SubBigPhotoEvent(bigPhotos, sumSize));
           notifyListeners();
         }
       } else if (event is RefreshEvent) {
+        notifyListeners();
+      }
+      if (event is TaskProgressEvent) {
+        if (event.type == "bigPhoto") {
+          bigPhotoProgress = event.progress;
+        } else if (event.type == "screenshotPhoto") {
+          screenshotPhotoProgress = event.progress;
+        } else if (event.type == "samePhoto") {
+          samePhotoProgress = event.progress;
+        }
+        print('event.progress----${event.progress}');
+        PhotoManagerTool.progress =
+            bigPhotoProgress + screenshotPhotoProgress + samePhotoProgress;
         notifyListeners();
       }
     });
@@ -260,7 +290,7 @@ class AppState extends ChangeNotifier {
 
   int sameCount() {
     int count = 0;
-    for (var group in samePhotos) {
+    for (var group in sameGroupPhotos) {
       count += group.assets.length;
     }
     return count;

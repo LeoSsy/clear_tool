@@ -26,9 +26,6 @@ ReceivePort globalPort = ReceivePort();
 FlutterIsolate? bigPhotoIsolate;
 FlutterIsolate? screenshotPhotoIsolate;
 
-/// 处理进度
-double imageProcessProgress = 0;
-
 @pragma('vm:entry-point')
 void spawnBigPhotosIsolate(SendPort port) async {
   PhotoManagerTool.allPhotoAssets = [];
@@ -51,8 +48,7 @@ void spawnBigPhotosIsolate(SendPort port) async {
           final mbSize = double.tryParse(size.replaceAll("MB", '')) ?? 0;
           if (mbSize > maxImageMB) {
             bigPhotoSize += length;
-            final index = assetItems.indexOf(asset);
-            imageProcessProgress += (index / assetItems.length) * 33.33;
+
             port.send({
               "event": "BigPhotoEvent",
               "data": asset.id,
@@ -61,6 +57,13 @@ void spawnBigPhotosIsolate(SendPort port) async {
           }
         }
       }
+      final index = assetItems.indexOf(asset);
+      double imageProcessProgress = (index / assetItems.length) * 33.33;
+      port.send({
+        "event": "TaskProgressEvent",
+        "type": 'bigPhoto',
+        "progress": imageProcessProgress,
+      });
     }
     break;
   }
@@ -83,24 +86,44 @@ void spawnScreenshotIsolate(SendPort port) async {
       break;
     }
   }
+  if (photoAssets.isEmpty) {
+    port.send({
+      "event": "TaskProgressEvent",
+      "type": 'screenshotPhoto',
+      "progress": 33.33,
+    });
+    port.send({
+      "event": "screenshotEvent",
+      "data": null,
+      'size': 0,
+    });
+    return;
+  }
   int totalSize = 0;
   for (var asset in photoAssets) {
     final originalFile = await asset.file;
     if (originalFile != null) {
       final length = await originalFile.length();
       totalSize += length;
-      final index = photoAssets.indexOf(asset);
-      imageProcessProgress += (index / photoAssets.length) * 33.33;
       port.send({
         "event": "screenshotEvent",
         "data": asset.id,
         'size': totalSize,
       });
     }
+
+    final index = photoAssets.indexOf(asset);
+    double imageProcessProgress = (index / photoAssets.length) * 33.33;
+    port.send({
+      "event": "TaskProgressEvent",
+      "type": 'screenshotPhoto',
+      "progress": imageProcessProgress,
+    });
   }
 }
 
 Map<String, AssetEntity> hashs = {};
+bool findSamePhotos = false;
 _imageHashCompare(SendPort port) {
   /// 分组逻辑
   List<Map<String, dynamic>> groups = [];
@@ -119,13 +142,12 @@ _imageHashCompare(SendPort port) {
       if (distance > 0.8) {
         useHashId.add(nextHash);
         // print('找到相似图片.....');
+        findSamePhotos = true;
         // 添加组
         groupIds.add(hashs[currentHash]!.id);
         groupIds.add(hashs[nextHash]!.id);
       }
     }
-    final index = hashs.keys.toList().indexOf(currentHash);
-    imageProcessProgress += (index / hashs.keys.length) * 33.33;
     if (groupIds.length >= 2) {
       groups.add(SamePhotoGroup(
         id: groupIds.first,
@@ -149,11 +171,14 @@ void spawnSamePhotosIsolate(SendPort port) async {
   // 获取所有图片资源对象
   // Map<String, AssetEntity> hashs = {};
   PhotoManagerTool.allPhotoAssets = [];
+  int compareCount = 50;
   final assetPaths =
       await PhotoManager.getAssetPathList(type: RequestType.image);
+  double albumCompareProgerss = compareCount / assetPaths.length;
   if (assetPaths.isNotEmpty) {
     for (var album in assetPaths) {
       int count = await album.assetCountAsync;
+      double assetCompareProgress = albumCompareProgerss / count;
       if (count == 0) continue;
       final assetItems = await album.getAssetListRange(start: 0, end: count);
       for (var i = 0; i < assetItems.length; i++) {
@@ -166,13 +191,30 @@ void spawnSamePhotosIsolate(SendPort port) async {
           // 每生成50张 对比一次
           if (hashs.length % 50 == 0) {
             _imageHashCompare(port);
+            double imageProcessProgress = i * assetCompareProgress * 33.33;
+            port.send({
+              "event": "TaskProgressEvent",
+              "type": 'samePhoto',
+              "progress": imageProcessProgress,
+            });
           }
-          print('hash.....$hash');
+          // print('hash.....$hash');
         }
       }
     }
   }
   _imageHashCompare(port);
+  if (!findSamePhotos) {
+    port.send({
+      "event": "sameEvent",
+      "data": null,
+    });
+  }
+  port.send({
+    "event": "TaskProgressEvent",
+    "type": 'samePhoto',
+    "progress": 33.33,
+  });
 
   // /// 分组逻辑
   // List<Map<String, dynamic>> groups = [];
@@ -252,6 +294,9 @@ void main() async {
       globalStreamControler.add(ScreenPhotoEvent(data['data'], data['size']));
     } else if (data['event'] == "refresh") {
       globalStreamControler.add(RefreshEvent());
+    } else if (data['event'] == "TaskProgressEvent") {
+      globalStreamControler.add(
+          TaskProgressEvent(type: data['type'], progress: data['progress']));
     }
   }, onError: (err) {
     print("Received message from isolate $err");

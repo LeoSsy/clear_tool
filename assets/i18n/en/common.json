@@ -8,5 +8,7 @@
         "cancleTitle1" : "no",
         "permission_denied1" : "Unable to retrieve your album photos. Please go to the system settings to allow the current app to access your album permissions",
         "use_info_photo" : "Only used to read photos from the album"
-    }
+    },
+    "bestImage" : "best",
+    "noFilesClean" : "no files"
 }
