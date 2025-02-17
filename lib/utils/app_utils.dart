@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/widget/image_preview_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
@@ -37,8 +38,8 @@ class AppUtils {
   static String fileSizeFormat(int size) {
     try {
       final unit = ['B', 'KB', 'MB', 'GB'];
-      final tp = (log(size) / log(1024)).floor();
-      return '${(size / pow(1024, tp)).toStringAsFixed(2)}${unit[tp.toInt()]}';
+      final tp = (log(size) / log(imgUnitOfAccount)).floor();
+      return '${(size / pow(imgUnitOfAccount, tp)).toStringAsFixed(2)}${unit[tp.toInt()]}';
     } catch (e) {
       return '0KB';
     }
