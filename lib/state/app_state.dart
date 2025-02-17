@@ -85,7 +85,6 @@ class AppState extends ChangeNotifier {
         // 获取所有图片id集合
         final newAssetList = <SamePhotoGroup>[];
         if (group.ids != null) {
-          int sumSize = 0;
           for (var assetId in group.ids!) {
             if (PhotoManagerTool.allPhotoAssetsIdMaps.keys.contains(assetId)) {
               final assetEntity =
@@ -99,7 +98,6 @@ class AppState extends ChangeNotifier {
                   ..thumnailBytes = thumbnailData
                   ..length = length);
                 newAssetList.add(group);
-                sumSize += length;
               }
             }
           }
@@ -110,7 +108,13 @@ class AppState extends ChangeNotifier {
               samePhotos.add(newAsset);
             }
           }
-          samePhotoSize += sumSize;
+          int sumSize = 0;
+          for (var group in samePhotos) {
+            for (var asset in group.assets) {
+              sumSize += asset.length;
+            }
+          }
+          samePhotoSize = sumSize;
           PhotoManagerTool.sameImageEntity = samePhotos;
           PhotoManagerTool.samePhotoSize = samePhotoSize;
 
@@ -252,6 +256,14 @@ class AppState extends ChangeNotifier {
         globalStreamControler.add(AllPhotoLoadFinishEvent());
       }
     });
+  }
+
+  int sameCount() {
+    int count = 0;
+    for (var group in samePhotos) {
+      count += group.assets.length;
+    }
+    return count;
   }
 
   void getDiskInfo() async {

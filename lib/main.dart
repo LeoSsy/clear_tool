@@ -29,7 +29,6 @@ FlutterIsolate? screenshotPhotoIsolate;
 /// 处理进度
 double imageProcessProgress = 0;
 
-
 @pragma('vm:entry-point')
 void spawnBigPhotosIsolate(SendPort port) async {
   PhotoManagerTool.allPhotoAssets = [];
@@ -101,37 +100,8 @@ void spawnScreenshotIsolate(SendPort port) async {
   }
 }
 
-Map<String, String> hashs = {};
-
-@pragma('vm:entry-point')
-void spawnSamePhotosIsolate(SendPort port) async {
-  // 获取所有图片资源对象
-  Map<String, AssetEntity> hashs = {};
-  PhotoManagerTool.allPhotoAssets = [];
-  final assetPaths =
-      await PhotoManager.getAssetPathList(type: RequestType.image);
-  int start = DateTime.now().millisecondsSinceEpoch;
-  if (assetPaths.isNotEmpty) {
-    for (var album in assetPaths) {
-      int count = await album.assetCountAsync;
-      if (count == 0) continue;
-      final assetItems = await album.getAssetListRange(start: 0, end: count);
-      for (var i = 0; i < assetItems.length; i++) {
-        final asset = assetItems[i];
-        final bytes = await asset.thumbnailData;
-        if (bytes != null) {
-          final hash =
-              ImageHashUtil.calculatePHash(img.decodeImage(bytes)!);
-          // final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
-          hashs[hash] = asset;
-          print('hash.....$hash');
-        }
-      }
-    }
-  }
-  double timeTotal = (DateTime.now().millisecondsSinceEpoch - start) / 1000.0;
-  print("总耗时: $timeTotal");
-
+Map<String, AssetEntity> hashs = {};
+_imageHashCompare(SendPort port) {
   /// 分组逻辑
   List<Map<String, dynamic>> groups = [];
   Set<String> useHashId = <String>{};
@@ -145,10 +115,10 @@ void spawnSamePhotosIsolate(SendPort port) async {
       if (useHashId.contains(nextHash)) continue;
       if (currentHash == nextHash) continue;
       final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
-      print('distance.....$distance');
+      // print('distance.....$distance');
       if (distance > 0.8) {
         useHashId.add(nextHash);
-        print('找到相似图片.....');
+        // print('找到相似图片.....');
         // 添加组
         groupIds.add(hashs[currentHash]!.id);
         groupIds.add(hashs[nextHash]!.id);
@@ -172,7 +142,79 @@ void spawnSamePhotosIsolate(SendPort port) async {
       });
     }
   }
-  print('groups----->${groups.length}');
+}
+
+@pragma('vm:entry-point')
+void spawnSamePhotosIsolate(SendPort port) async {
+  // 获取所有图片资源对象
+  // Map<String, AssetEntity> hashs = {};
+  PhotoManagerTool.allPhotoAssets = [];
+  final assetPaths =
+      await PhotoManager.getAssetPathList(type: RequestType.image);
+  if (assetPaths.isNotEmpty) {
+    for (var album in assetPaths) {
+      int count = await album.assetCountAsync;
+      if (count == 0) continue;
+      final assetItems = await album.getAssetListRange(start: 0, end: count);
+      for (var i = 0; i < assetItems.length; i++) {
+        final asset = assetItems[i];
+        final bytes = await asset.thumbnailData;
+        if (bytes != null) {
+          final hash = ImageHashUtil.calculatePHash(img.decodeImage(bytes)!);
+          // final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
+          hashs[hash] = asset;
+          // 每生成50张 对比一次
+          if (hashs.length % 50 == 0) {
+            _imageHashCompare(port);
+          }
+          print('hash.....$hash');
+        }
+      }
+    }
+  }
+  _imageHashCompare(port);
+
+  // /// 分组逻辑
+  // List<Map<String, dynamic>> groups = [];
+  // Set<String> useHashId = <String>{};
+  // for (var i = 0; i < hashs.length; i++) {
+  //   final currentHash = hashs.keys.toList()[i];
+  //   Set<String> groupIds = <String>{};
+  //   if (useHashId.contains(currentHash)) continue;
+  //   useHashId.add(currentHash);
+  //   for (var j = 0; j < hashs.length; j++) {
+  //     final nextHash = hashs.keys.toList()[j];
+  //     if (useHashId.contains(nextHash)) continue;
+  //     if (currentHash == nextHash) continue;
+  //     final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
+  //     print('distance.....$distance');
+  //     if (distance > 0.8) {
+  //       useHashId.add(nextHash);
+  //       print('找到相似图片.....');
+  //       // 添加组
+  //       groupIds.add(hashs[currentHash]!.id);
+  //       groupIds.add(hashs[nextHash]!.id);
+  //     }
+  //   }
+  //   final index = hashs.keys.toList().indexOf(currentHash);
+  //   imageProcessProgress += (index / hashs.keys.length) * 33.33;
+  //   if (groupIds.length >= 2) {
+  //     groups.add(SamePhotoGroup(
+  //       id: groupIds.first,
+  //       title: '${groupIds.length}',
+  //       ids: groupIds.toList(),
+  //     ).toJson());
+  //     port.send({
+  //       "event": "sameEvent",
+  //       "data": SamePhotoGroup(
+  //         id: groupIds.first,
+  //         title: '${groupIds.length}',
+  //         ids: groupIds.toList(),
+  //       ).toJson(),
+  //     });
+  //   }
+  // }
+  // print('groups----->${groups.length}');
 }
 
 void main() async {
