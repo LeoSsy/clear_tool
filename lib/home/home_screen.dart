@@ -15,16 +15,6 @@ import 'package:provider/provider.dart';
 
 class HomeScreen extends HookWidget {
   const HomeScreen({super.key});
-  // void changeLanguage() async {
-  //   WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-  //     final currentLang = FlutterI18n.currentLocale(context)!;
-  //     final nextLang = currentLang.languageCode == 'zh'
-  //         ? const Locale('zh')
-  //         : const Locale('en');
-  //     await FlutterI18n.refresh(context, nextLang);
-  //     setState(() {});
-  //   });
-  // }
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +108,7 @@ class HomeScreen extends HookWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${appState.sameCount()}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                '${appState.sameCount()} ${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
                                   fontSize: 8.autoSize,
                                   color: const Color(0xff5E1FB2),
@@ -205,7 +195,7 @@ class HomeScreen extends HookWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${PhotoManagerTool.bigImageEntity.length}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                '${PhotoManagerTool.bigImageEntity.length} ${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
                                   fontSize: 8.autoSize!,
                                   color: const Color(0xff1C6EAA),
@@ -291,7 +281,7 @@ class HomeScreen extends HookWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                '${appState.screenPhotos?.length ?? 0}${AppUtils.i18Translate('home.sheet', context: context)}',
+                                '${appState.screenPhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
                                   fontSize: 8.autoSize!,
                                   color: const Color(0xff1B5FC4),
@@ -353,7 +343,7 @@ class HomeScreen extends HookWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            '${appState.deviceName}${AppUtils.i18Translate("home.diskSpace")}',
+            '${appState.deviceName} ${AppUtils.i18Translate("home.diskSpace")}',
             style: const TextStyle(
               fontSize: 17.5,
               color: AppColor.textPrimary,

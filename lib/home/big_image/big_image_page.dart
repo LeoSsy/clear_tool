@@ -138,7 +138,7 @@ class _BigImagePageState extends State<BigImagePage> {
             child: Padding(
               padding: const EdgeInsets.all(9),
               child: Text(
-                '${bigPhotos.length}${AppUtils.i18Translate('home.aImage', context: context)},${AppUtils.fileSizeFormat(PhotoManagerTool.bigSumSize)}',
+                '${bigPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)},${AppUtils.fileSizeFormat(PhotoManagerTool.bigSumSize)}',
                 style: const TextStyle(
                   fontSize: 12,
                   color: AppColor.textPrimary,
@@ -398,7 +398,7 @@ class _BigImagePageState extends State<BigImagePage> {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   alignment: Alignment.center,
                   child: Text(
-                    '${AppUtils.i18Translate('home.zip', context: context)}${selPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}',
+                    '${AppUtils.i18Translate('home.zip', context: context)} ${selPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)}',
                     style: const TextStyle(
                       fontSize: 13,
                       color: Colors.white,

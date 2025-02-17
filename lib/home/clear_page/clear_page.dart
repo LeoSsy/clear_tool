@@ -1,21 +1,14 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:clear_tool/const/colors.dart';
-import 'package:clear_tool/const/const.dart';
-import 'package:clear_tool/event/event_define.dart';
 import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/big_image/big_image_page.dart';
 import 'package:clear_tool/home/same_image/same_image_page.dart';
 import 'package:clear_tool/home/screen_shot/screen_shot_page.dart';
-import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/state/app_state.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
-import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:provider/provider.dart';
 
 class ClearPage extends HookWidget {
@@ -65,7 +58,7 @@ class ClearPage extends HookWidget {
                     children: [
                       const SizedBox(height: 11),
                       Text(
-                        PhotoManagerTool.progress < 99
+                        PhotoManagerTool.progress < 98
                             ? '${AppUtils.i18Translate('home.recognition', context: context)}...'
                             : AppUtils.i18Translate('home.recognitionOK',
                                 context: context),
@@ -83,7 +76,7 @@ class ClearPage extends HookWidget {
                                 child: SizedBox(
                                   height: 4,
                                   child: LinearProgressIndicator(
-                                    value: PhotoManagerTool.progress / 100,
+                                    value: (PhotoManagerTool.progress >= 98 ? 100 : PhotoManagerTool.progress) / 100,
                                     color: AppColor.mainColor,
                                     backgroundColor: AppColor.D7D7D7,
                                   ),
@@ -92,7 +85,7 @@ class ClearPage extends HookWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              '${PhotoManagerTool.progress >= 99 ? 100 : PhotoManagerTool.progress.toStringAsFixed(0)}%',
+                              '${PhotoManagerTool.progress >= 98 ? 100 : PhotoManagerTool.progress.toStringAsFixed(0)}%',
                               style: const TextStyle(
                                 fontSize: 7,
                                 color: AppColor.textPrimary,
@@ -128,7 +121,7 @@ class ClearPage extends HookWidget {
                             ),
                           ),
                           Text(
-                            '（${appState.samePhotos?.length ?? 0}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}, ${AppUtils.fileSizeFormat(appState.samePhotoSize)}）',
+                            '（${appState.samePhotos?.length ?? 0} ${AppUtils.i18Translate('home.aImage', context: context)}, ${AppUtils.fileSizeFormat(appState.samePhotoSize)}）',
                             style: const TextStyle(
                               fontSize: 11,
                               color: AppColor.subTitle999,
@@ -264,7 +257,7 @@ class ClearPage extends HookWidget {
                             ),
                           ),
                           Text(
-                            '（${appState.bigPhotos?.length ?? 0}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}, ${AppUtils.fileSizeFormat(appState.bigPhotoSize)}）',
+                            '（${appState.bigPhotos?.length ?? 0} ${AppUtils.i18Translate('home.aImage', context: context)}, ${AppUtils.fileSizeFormat(appState.bigPhotoSize)}）',
                             style: const TextStyle(
                               fontSize: 11,
                               color: AppColor.subTitle999,
@@ -399,7 +392,7 @@ class ClearPage extends HookWidget {
                             ),
                           ),
                           Text(
-                            '（${appState.screenPhotos?.length ?? 0}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}, ${AppUtils.fileSizeFormat(appState.screenPhotoSize)}）',
+                            '（${appState.screenPhotos?.length ?? 0} ${AppUtils.i18Translate('home.aImage', context: context)}, ${AppUtils.fileSizeFormat(appState.screenPhotoSize)}）',
                             style: const TextStyle(
                               fontSize: 11,
                               color: AppColor.subTitle999,

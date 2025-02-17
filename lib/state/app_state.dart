@@ -12,6 +12,7 @@ import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:mmkv/mmkv.dart';
 import 'package:photo_manager/photo_manager.dart';
@@ -60,10 +61,27 @@ class AppState extends ChangeNotifier {
   double screenshotPhotoProgress = 0;
   double samePhotoProgress = 0;
 
+  String? _languageCode;
+
   @override
   void dispose() {
     super.dispose();
     _streamSubscription.cancel();
+  }
+
+  /// change lanuage
+  void changeLanguage() async {
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+      final local = FlutterI18n.currentLocale(AppUtils.globalContext!);
+      if (_languageCode != null && _languageCode == local?.languageCode) {
+        return;
+      }
+      _languageCode = local?.languageCode;
+      final nextLang =
+          local?.languageCode == 'en' ? const Locale('en') : const Locale('zh');
+      await FlutterI18n.refresh(AppUtils.globalContext!, nextLang);
+      notifyListeners();
+    });
   }
 
   AppState() {
@@ -250,12 +268,12 @@ class AppState extends ChangeNotifier {
         } else if (event.type == "samePhoto") {
           samePhotoProgress = event.progress;
         }
-        print('event.progress----${event.progress}');
         PhotoManagerTool.progress =
             bigPhotoProgress + screenshotPhotoProgress + samePhotoProgress;
         notifyListeners();
       }
     });
+    changeLanguage();
     Future.delayed(const Duration(milliseconds: 300), () async {
       // 检查权限
       final havePermission = await PermissionUtils.checkPhotosPermisson(

@@ -1,8 +1,11 @@
 import 'package:clear_tool/home/clear_page/clear_page.dart';
 import 'package:clear_tool/home/home_screen.dart';
 import 'package:clear_tool/mine/mine_page.dart';
+import 'package:clear_tool/state/app_state.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 class TabbarScreen extends StatefulWidget {
   const TabbarScreen({Key? key}) : super(key: key);
 
@@ -11,10 +14,10 @@ class TabbarScreen extends StatefulWidget {
 }
 
 class _TabbarScreenState extends State<TabbarScreen> {
-  final _tabTitles = [
-    "首页",
+  var _tabTitles = [
+    "common.home",
     "",
-    "我的",
+    "common.mine",
   ];
 
   final _images = [
@@ -47,6 +50,7 @@ class _TabbarScreenState extends State<TabbarScreen> {
   @override
   Widget build(BuildContext context) {
     AppUtils.globalContext = context;
+    Provider.of<AppState>(context).changeLanguage();
     return Stack(
       children: [
         Scaffold(
@@ -86,7 +90,7 @@ class _TabbarScreenState extends State<TabbarScreen> {
         ),
         Positioned(
           left: (MediaQuery.of(context).size.width / 2) - 71 / 2,
-          bottom: MediaQuery.of(context).padding.bottom + 71*0.2,
+          bottom: MediaQuery.of(context).padding.bottom + 71 * 0.2,
           child: _buildFloatingActionButton(),
         ),
       ],
@@ -94,9 +98,6 @@ class _TabbarScreenState extends State<TabbarScreen> {
   }
 
   _onTap(int index) {
-    if (_tabTitles[index] == "清理") {
-      return;
-    }
     setState(() {
       _currentIndex = index;
     });
@@ -129,7 +130,7 @@ class _TabbarScreenState extends State<TabbarScreen> {
                   height: 22,
                 ),
         ),
-        label: _tabTitles[index],
+        label: _tabTitles[index] != "" ? AppUtils.i18Translate(_tabTitles[index]) : '',
       ),
     );
   }

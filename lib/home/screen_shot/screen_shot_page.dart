@@ -317,7 +317,7 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   alignment: Alignment.center,
                   child: Text(
-                    '${AppUtils.i18Translate('home.delete', context: context)}${selPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}',
+                    '${AppUtils.i18Translate('home.delete', context: context)} ${selPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)}',
                     style: const TextStyle(
                       fontSize: 13,
                       color: Colors.white,

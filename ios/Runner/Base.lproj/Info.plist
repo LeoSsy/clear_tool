@@ -26,12 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSCalendarsUsageDescription</key>
-	<string>是否允许当前应用访问您的日历</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>是否允许当前应用访问您的相册,以便于保存图片。</string>
+	<string>是否允许当前应用操作相册图片用于删除相似过大图片？</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>是否允许当前应用访问您的相册,以便于进行上传图片。</string>
+	<string>是否允许当前应用访问您的相册用于识别相似图大图？</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UILaunchStoryboardName</key>

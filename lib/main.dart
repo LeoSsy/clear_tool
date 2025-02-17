@@ -36,9 +36,16 @@ void spawnBigPhotosIsolate(SendPort port) async {
   for (var album in assetPaths) {
     final count = await album.assetCountAsync;
     if (count == 0) {
+      port.send({"event": "BigPhotoEvent", "data": null, 'size': 0});
+      port.send({
+        "event": "TaskProgressEvent",
+        "type": 'bigPhoto',
+        "progress": 33.33,
+      });
       break;
     }
     final assetItems = await album.getAssetListRange(start: 0, end: count);
+    bool findBigPhoto = false;
     for (var asset in assetItems) {
       final originalFile = await asset.file;
       if (originalFile != null) {
@@ -47,8 +54,8 @@ void spawnBigPhotosIsolate(SendPort port) async {
         if (size.contains("MB")) {
           final mbSize = double.tryParse(size.replaceAll("MB", '')) ?? 0;
           if (mbSize > maxImageMB) {
+            findBigPhoto = true;
             bigPhotoSize += length;
-
             port.send({
               "event": "BigPhotoEvent",
               "data": asset.id,
@@ -63,6 +70,14 @@ void spawnBigPhotosIsolate(SendPort port) async {
         "event": "TaskProgressEvent",
         "type": 'bigPhoto',
         "progress": imageProcessProgress,
+      });
+    }
+    if (!findBigPhoto) {
+      port.send({"event": "BigPhotoEvent", "data": null, 'size': 0});
+      port.send({
+        "event": "TaskProgressEvent",
+        "type": 'bigPhoto',
+        "progress": 33.33,
       });
     }
     break;
@@ -100,7 +115,8 @@ void spawnScreenshotIsolate(SendPort port) async {
     return;
   }
   int totalSize = 0;
-  for (var asset in photoAssets) {
+  for (var i = 0; i < photoAssets.length; i++) {
+    final asset = photoAssets[i];
     final originalFile = await asset.file;
     if (originalFile != null) {
       final length = await originalFile.length();
@@ -111,9 +127,7 @@ void spawnScreenshotIsolate(SendPort port) async {
         'size': totalSize,
       });
     }
-
-    final index = photoAssets.indexOf(asset);
-    double imageProcessProgress = (index / photoAssets.length) * 33.33;
+    double imageProcessProgress = (i / photoAssets.length) * 33.33;
     port.send({
       "event": "TaskProgressEvent",
       "type": 'screenshotPhoto',
@@ -191,7 +205,9 @@ void spawnSamePhotosIsolate(SendPort port) async {
           // 每生成50张 对比一次
           if (hashs.length % 50 == 0) {
             _imageHashCompare(port);
-            double imageProcessProgress = i * assetCompareProgress * 33.33;
+            double imageProcessProgress =
+                i / assetItems.length * assetCompareProgress * 33.33;
+            // print('same++++++$imageProcessProgress');
             port.send({
               "event": "TaskProgressEvent",
               "type": 'samePhoto',
@@ -313,11 +329,12 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    AppUtils.globalContext = context;
     return ChangeNotifierProvider(
       create: (context) => AppState(),
       builder: (context, child) {
         return MaterialApp(
-          title: 'Flutter Demo',
+          title: 'Smart clear',
           theme: ThemeData(
             useMaterial3: false,
             primarySwatch: getMaterialColor(AppColor.mainColor),

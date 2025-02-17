@@ -207,7 +207,7 @@ class _SameImagePageState extends State<SameImagePage> {
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               child: samePhotos[section].totalSize > 0
                                   ? Text(
-                                      '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)},${AppUtils.fileSizeFormat(samePhotos[section].totalSize)}',
+                                      '${samePhotos[section].assets.length} ${AppUtils.i18Translate('home.aImage', context: context)},${AppUtils.fileSizeFormat(samePhotos[section].totalSize)}',
                                       style: const TextStyle(
                                         color: AppColor.textPrimary,
                                         fontSize: 12,
@@ -221,7 +221,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                         if (snapshot.connectionState ==
                                             ConnectionState.done) {
                                           return Text(
-                                            '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)},${snapshot.data}',
+                                            '${samePhotos[section].assets.length} ${AppUtils.i18Translate('home.aImage', context: context)},${snapshot.data}',
                                             style: const TextStyle(
                                               color: AppColor.textPrimary,
                                               fontSize: 12,
@@ -232,7 +232,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                           return Row(
                                             children: [
                                               Text(
-                                                '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}',
+                                                '${samePhotos[section].assets.length} ${AppUtils.i18Translate('home.aImage', context: context)}',
                                                 style: const TextStyle(
                                                   color: AppColor.textPrimary,
                                                   fontSize: 12,
@@ -471,7 +471,7 @@ class _SameImagePageState extends State<SameImagePage> {
                       padding: const EdgeInsets.symmetric(vertical: 10),
                       alignment: Alignment.center,
                       child: Text(
-                        '${AppUtils.i18Translate('home.delete', context: context)}${selPhotos.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}',
+                        '${AppUtils.i18Translate('home.delete', context: context)} ${selPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)}',
                         style: const TextStyle(
                           fontSize: 13,
                           color: Colors.white,
