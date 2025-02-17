@@ -47,7 +47,7 @@ void spawnBigPhotosIsolate(SendPort port) async {
     final assetItems = await album.getAssetListRange(start: 0, end: count);
     bool findBigPhoto = false;
     for (var asset in assetItems) {
-      final originalFile = await asset.file;
+      final originalFile = await asset.originFile;
       if (originalFile != null) {
         final length = await originalFile.length();
         final size = AppUtils.fileSizeFormat(length);

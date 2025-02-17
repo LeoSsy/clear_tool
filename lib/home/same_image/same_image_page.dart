@@ -371,7 +371,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                               snapshot.connectionState ==
                                                       ConnectionState.done
                                                   ? '${snapshot.data}'
-                                                  : '0B',
+                                                  : '0KB',
                                               style: const TextStyle(
                                                 fontSize: 9,
                                                 color: Colors.white,

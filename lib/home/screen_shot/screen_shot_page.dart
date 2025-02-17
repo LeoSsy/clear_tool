@@ -221,9 +221,9 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                                       right: 2,
                                       bottom: 2,
                                       child: Container(
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black,
-                                          borderRadius: BorderRadius.all(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.5),
+                                          borderRadius: const BorderRadius.all(
                                             Radius.circular(4),
                                           ),
                                         ),

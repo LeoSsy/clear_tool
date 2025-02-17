@@ -255,9 +255,9 @@ class _BigImagePageState extends State<BigImagePage> {
                                       right: 2,
                                       bottom: 2,
                                       child: Container(
-                                        decoration: const BoxDecoration(
-                                          color: Colors.black,
-                                          borderRadius: BorderRadius.all(
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.5),
+                                          borderRadius: const BorderRadius.all(
                                             Radius.circular(4),
                                           ),
                                         ),
@@ -271,7 +271,7 @@ class _BigImagePageState extends State<BigImagePage> {
                                                     snapshot.connectionState ==
                                                             ConnectionState.done
                                                         ? '${snapshot.data}'
-                                                        : '0B',
+                                                        : '0KB',
                                                     style: const TextStyle(
                                                       fontSize: 9,
                                                       color: Colors.white,
@@ -431,7 +431,7 @@ class _BigImagePageState extends State<BigImagePage> {
       asset.originalFilePath = orignalFile.path;
       return AppUtils.fileSizeFormat(length);
     } else {
-      return '0B';
+      return '0KB';
     }
   }
 }
