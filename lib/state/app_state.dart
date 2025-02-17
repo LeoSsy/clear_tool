@@ -72,7 +72,14 @@ class AppState extends ChangeNotifier {
         bigPhotoIsolate = await FlutterIsolate.spawn(
             spawnBigPhotosIsolate, globalPort.sendPort);
       } else if (event is SamePhotoDeleteEvent) {
-
+        for (var id in event.ids) {
+          for (var group in samePhotos) {
+            group.assets.removeWhere((el) => el.assetEntity.id == id);
+          }
+        }
+        samePhotoSize = max(samePhotoSize -= event.deleteTotalSize, 0);
+        notifyListeners();
+        getDiskInfo();
       } else if (event is SamePhotoEvent) {
         final group = event.group;
         // 获取所有图片id集合
@@ -206,6 +213,7 @@ class AppState extends ChangeNotifier {
         if (bigPhotos.isNotEmpty) {
           PhotoManagerTool.bigSumSize += sumSize;
           bigPhotoSize = PhotoManagerTool.bigSumSize;
+
           /// 发送二级页面事件
           globalStreamControler.add(SubBigPhotoEvent(bigPhotos, sumSize));
           notifyListeners();

@@ -39,6 +39,8 @@ class _SameImagePageState extends State<SameImagePage> {
   void initState() {
     super.initState();
     samePhotos = PhotoManagerTool.sameImageEntity;
+    assetSortForGroups();
+    allSelectedPhotos(true);
     streamSubscription = globalStreamControler.stream.listen((event) {
       if (event is SamePhotoEvent) {
         if (mounted && !isScrolling) {
@@ -51,6 +53,8 @@ class _SameImagePageState extends State<SameImagePage> {
                 samePhotos.add(newAsset);
               }
             }
+            assetSortForGroups();
+            allSelectedPhotos(true);
           });
         }
       } else if (event is RefreshEvent) {
@@ -59,33 +63,53 @@ class _SameImagePageState extends State<SameImagePage> {
     });
   }
 
-  allSelectedPhotos(bool isAllSel) {
-    // if (isAllSel) {
-    //   // selPhotos = samePhotos.;
-    //   for (var group in samePhotos) {
-    //     if (group.ids != null && group.ids!.isNotEmpty) {
-    //       for (var i = 0; i < group.ids!.length; i++) {
-    //         if (i != 0) {
-              
-    //         }
-    //       }
-    //     }
-    //   }
-    // } else {
-    //   bigPhotos.map((e) {
-    //     e.selected = false;
-    //     return e;
-    //   }).toList();
-    //   selPhotos = [];
-    // }
-    // if (mounted) {
-    //   setState(() {});
-    // }
+  /// 分组内图片按照大小排序
+  void assetSortForGroups() {
+    for (var group in samePhotos) {
+      group.assets.sort((asset1, asset2) {
+        if (asset1.length > asset2.length) {
+          return -1;
+        } else if (asset1.length < asset2.length) {
+          return 1;
+        } else {
+          return 0;
+        }
+      });
+    }
+  }
+
+  allSelectedPhotos(bool isAll) {
+    isAllSel = isAll;
+    selPhotos = [];
+    if (isAllSel) {
+      for (var group in samePhotos) {
+        for (var asset in group.assets) {
+          if (group.assets.indexOf(asset) != 0) {
+            asset.selected = true;
+            selPhotos.add(asset);
+          }
+        }
+      }
+    } else {
+      for (var group in samePhotos) {
+        for (var asset in group.assets) {
+          if (group.assets.indexOf(asset) != 0) {
+            asset.selected = false;
+          } else {
+            if (asset.selected) asset.selected = false;
+          }
+        }
+      }
+    }
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
   void dispose() {
     streamSubscription?.cancel();
+    allSelectedPhotos(false);
     super.dispose();
   }
 
@@ -116,24 +140,8 @@ class _SameImagePageState extends State<SameImagePage> {
         actions: [
           TextButton(
               onPressed: () {
-                setState(() {
-                  isAllSel = !isAllSel;
-                  selPhotos = [];
-                  if (isAllSel) {
-                    for (var group in samePhotos) {
-                      for (var asset in group.assets) {
-                        asset.selected = true;
-                        selPhotos.add(asset);
-                      }
-                    }
-                  } else {
-                    for (var group in samePhotos) {
-                      for (var asset in group.assets) {
-                        asset.selected = false;
-                      }
-                    }
-                  }
-                });
+                isAllSel = !isAllSel;
+                allSelectedPhotos(isAllSel);
               },
               child: Text(
                 isAllSel
@@ -191,56 +199,60 @@ class _SameImagePageState extends State<SameImagePage> {
                         crossAxisSpacing: 7,
                       ),
                       sectionCount: samePhotos.length,
-                      headerForSection: (section) => Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: samePhotos[section].totalSize > 0
-                            ? Text(
-                                '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)},${AppUtils.fileSizeFormat(samePhotos[section].totalSize)}',
-                                style: const TextStyle(
-                                  color: AppColor.textPrimary,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            : FutureBuilder(
-                                future:
-                                    _loadGroupImageSize(samePhotos[section]),
-                                builder: (context, snapshot) {
-                                  if (snapshot.connectionState ==
-                                      ConnectionState.done) {
-                                    return Text(
-                                      '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)},${snapshot.data}',
+                      headerForSection: (section) => samePhotos[section]
+                              .assets
+                              .isEmpty
+                          ? const SizedBox()
+                          : Container(
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              child: samePhotos[section].totalSize > 0
+                                  ? Text(
+                                      '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)},${AppUtils.fileSizeFormat(samePhotos[section].totalSize)}',
                                       style: const TextStyle(
                                         color: AppColor.textPrimary,
                                         fontSize: 12,
                                         fontWeight: FontWeight.bold,
                                       ),
-                                    );
-                                  } else {
-                                    return Row(
-                                      children: [
-                                        Text(
-                                          '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}',
-                                          style: const TextStyle(
-                                            color: AppColor.textPrimary,
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                        ),
-                                        const CupertinoActivityIndicator(
-                                            radius: 4),
-                                        Text(
-                                          '${AppUtils.i18Translate('homde.caculateSize', context: context)}...',
-                                          style: const TextStyle(
-                                            fontSize: 9,
-                                            color: AppColor.subTitle999,
-                                          ),
-                                        )
-                                      ],
-                                    );
-                                  }
-                                }),
-                      ),
+                                    )
+                                  : FutureBuilder(
+                                      future: _loadGroupImageSize(
+                                          samePhotos[section]),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.connectionState ==
+                                            ConnectionState.done) {
+                                          return Text(
+                                            '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)},${snapshot.data}',
+                                            style: const TextStyle(
+                                              color: AppColor.textPrimary,
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          );
+                                        } else {
+                                          return Row(
+                                            children: [
+                                              Text(
+                                                '${samePhotos[section].assets.length}${AppUtils.i18Translate('home.sheet', context: context)}${AppUtils.i18Translate('home.image', context: context)}',
+                                                style: const TextStyle(
+                                                  color: AppColor.textPrimary,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                              const CupertinoActivityIndicator(
+                                                  radius: 4),
+                                              Text(
+                                                '${AppUtils.i18Translate('homde.caculateSize', context: context)}...',
+                                                style: const TextStyle(
+                                                  fontSize: 9,
+                                                  color: AppColor.subTitle999,
+                                                ),
+                                              )
+                                            ],
+                                          );
+                                        }
+                                      }),
+                            ),
                       itemInSectionBuilder: (_, indexPath) {
                         final assets = samePhotos[indexPath.section]
                             .assets[indexPath.index];
@@ -318,6 +330,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                 right: 0,
                                 top: 0,
                                 child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
                                   onTap: () {
                                     setState(() {
                                       assets.selected = !assets.selected;
@@ -329,7 +342,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                     });
                                   },
                                   child: Padding(
-                                    padding: const EdgeInsets.all(5),
+                                    padding: const EdgeInsets.all(8),
                                     child: Image.asset(
                                       assets.selected
                                           ? 'assets/images/common/selected_sel.png'
@@ -393,10 +406,9 @@ class _SameImagePageState extends State<SameImagePage> {
                       bottom: AppUtils.safeAreapadding.bottom + 12),
                   child: GestureDetector(
                     onTap: () async {
-                      // final state = await PermissionUtils.checkPhotosWritePermisson();
                       PermissionState state1 =
                           await PhotoManager.requestPermissionExtend();
-                      if (state1.hasAccess) {
+                      if (state1.isAuth) {
                         List<String> deleIds = [];
                         for (var asset in selPhotos) {
                           deleIds.add(asset.assetEntity.id);
@@ -405,6 +417,29 @@ class _SameImagePageState extends State<SameImagePage> {
                           final result =
                               await PhotoManager.editor.deleteWithIds(deleIds);
                           if (result.length == deleIds.length) {
+                            List<SamePhotoGroup> delGroup = [];
+                            int deleteTotalSize = 0;
+                            for (var group in samePhotos) {
+                              List<ImageAsset> newAsset = [];
+                              for (var asset in group.assets) {
+                                if (!deleIds.contains(asset.assetEntity.id)) {
+                                  newAsset.add(asset);
+                                } else {
+                                  selPhotos.remove(asset);
+                                  deleteTotalSize += asset.length;
+                                }
+                              }
+                              if (group.assets.isNotEmpty) {
+                                group.assets = newAsset;
+                              } else {
+                                delGroup.add(group);
+                              }
+                            }
+                            for (var delGroup in delGroup) {
+                              samePhotos.remove(delGroup);
+                            }
+                            setState(() {});
+                            globalStreamControler.add(SamePhotoDeleteEvent(deleIds, deleteTotalSize));
                             // ignore: use_build_context_synchronously
                             ToastUtil.showSuccessInfo(AppUtils.i18Translate(
                                 'home.deleteOK',
