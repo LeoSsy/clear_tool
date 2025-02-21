@@ -1394,7 +1394,7 @@ class AppDialog {
                       height: 28,
                       child: ListTile(
                         minVerticalPadding: 0,
-                        title: Text(title ?? '权限使用说明:'),
+                        title: Text(title ?? '${AppUtils.i18Translate("common.dialog.title1")}:'),
                         onTap: () => Navigator.of(context).pop('item1'),
                       ),
                     ),

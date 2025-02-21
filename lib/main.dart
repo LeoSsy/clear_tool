@@ -15,6 +15,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
 import 'package:mmkv/mmkv.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:image/image.dart' as img;
@@ -159,7 +160,7 @@ _imageHashCompare(SendPort port) {
       if (currentHash == nextHash) continue;
       final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
       // print('distance.....$distance');
-      if (distance > 0.8) {
+      if (distance > 0.72) {
         useHashId.add(nextHash);
         // print('找到相似图片.....');
         findSamePhotos = true;
@@ -282,13 +283,14 @@ void spawnSamePhotosIsolate(SendPort port) async {
 }
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   final FlutterI18nDelegate flutterI18nDelegate = FlutterI18nDelegate(
     translationLoader: NamespaceFileTranslationLoader(
       namespaces: ["common", "home"],
-      useCountryCode: true,
-      fallbackDir: 'en',
+      // useCountryCode: true,
+      // fallbackDir: 'en',
       basePath: 'assets/i18n',
-      // forcedLocale: const Locale('zh'),
+      forcedLocale: Locale(WidgetsBinding.instance.window.locale.languageCode == "zh" ? "zh" : 'en'),
     ),
     missingTranslationHandler: (key, locale) {
       // ignore: avoid_print
@@ -296,7 +298,6 @@ void main() async {
     },
   );
   
-  WidgetsFlutterBinding.ensureInitialized();
   final rootDir = await MMKV.initialize();
   print('MMKV for flutter with rootDir = $rootDir');
 

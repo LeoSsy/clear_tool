@@ -26,6 +26,8 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>是否允许当前应用访问您相机拍摄图片?</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>是否允许当前应用操作相册图片用于删除相似过大图片？</string>
 	<key>NSPhotoLibraryUsageDescription</key>
@@ -49,7 +51,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCameraUsageDescription</key>
-	<string>是否允许当前应用访问您相机拍摄图片?</string>
 </dict>
 </plist>

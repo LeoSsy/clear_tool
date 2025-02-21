@@ -14,7 +14,7 @@ class TabbarScreen extends StatefulWidget {
 }
 
 class _TabbarScreenState extends State<TabbarScreen> {
-  var _tabTitles = [
+  final _tabTitles = [
     "common.home",
     "",
     "common.mine",
@@ -130,7 +130,9 @@ class _TabbarScreenState extends State<TabbarScreen> {
                   height: 22,
                 ),
         ),
-        label: _tabTitles[index] != "" ? AppUtils.i18Translate(_tabTitles[index]) : '',
+        label: _tabTitles[index] != ""
+            ? AppUtils.i18Translate(_tabTitles[index])
+            : '',
       ),
     );
   }

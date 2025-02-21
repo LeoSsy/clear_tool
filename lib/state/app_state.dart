@@ -71,17 +71,17 @@ class AppState extends ChangeNotifier {
 
   /// change lanuage
   void changeLanguage() async {
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-      final local = FlutterI18n.currentLocale(AppUtils.globalContext!);
-      if (_languageCode != null && _languageCode == local?.languageCode) {
-        return;
-      }
-      _languageCode = local?.languageCode;
-      final nextLang =
-          local?.languageCode == 'en' ? const Locale('en') : const Locale('zh');
-      await FlutterI18n.refresh(AppUtils.globalContext!, nextLang);
-      notifyListeners();
-    });
+    // WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
+    //   final local = FlutterI18n.currentLocale(AppUtils.globalContext!);
+    //   if (_languageCode != null && _languageCode == local?.languageCode) {
+    //     return;
+    //   }
+    //   _languageCode = local?.languageCode;
+    //   final nextLang =
+    //       local?.languageCode == 'en' ? const Locale('en') : const Locale('zh');
+    //   await FlutterI18n.refresh(AppUtils.globalContext!, nextLang);
+    //   notifyListeners();
+    // });
   }
 
   AppState() {
