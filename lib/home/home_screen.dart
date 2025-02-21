@@ -360,7 +360,7 @@ class HomeScreen extends HookWidget {
                 ),
               ),
               Text(
-                '${AppUtils.i18Translate("home.totalSpace")}${appState.totalSize}',
+                '${AppUtils.i18Translate("home.totalSpace")} ${appState.totalSize}',
                 style: const TextStyle(
                   fontSize: 13,
                   color: AppColor.textSecondary,

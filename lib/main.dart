@@ -285,16 +285,17 @@ void main() async {
   final FlutterI18nDelegate flutterI18nDelegate = FlutterI18nDelegate(
     translationLoader: NamespaceFileTranslationLoader(
       namespaces: ["common", "home"],
-      useCountryCode: false,
+      useCountryCode: true,
       fallbackDir: 'en',
       basePath: 'assets/i18n',
-      forcedLocale: const Locale('zh'),
+      // forcedLocale: const Locale('zh'),
     ),
     missingTranslationHandler: (key, locale) {
       // ignore: avoid_print
       print("--- Missing Key: $key, languageCode: ${locale!.languageCode}");
     },
   );
+  
   WidgetsFlutterBinding.ensureInitialized();
   final rootDir = await MMKV.initialize();
   print('MMKV for flutter with rootDir = $rootDir');
