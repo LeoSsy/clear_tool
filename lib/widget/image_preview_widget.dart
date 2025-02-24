@@ -1,8 +1,13 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/utils/app_utils.dart';
+import 'package:clear_tool/widget/preview_dot_indicator.dart';
+import 'package:extended_image/extended_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
@@ -77,19 +82,14 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                   );
                 },
                 itemCount: widget.images.length,
-                loadingBuilder: (context, event) => Center(
-                  child: SizedBox(
-                    width: 20.0,
-                    height: 20.0,
-                    child: CircularProgressIndicator(
-                      color: AppColor.mainColor,
-                      value: event == null
-                          ? 0
-                          : event.cumulativeBytesLoaded /
-                              (event.expectedTotalBytes ?? 1),
+                loadingBuilder: (context, event) {
+                  return const Center(
+                    child: CupertinoActivityIndicator(
+                      radius: 24,
+                      color: Colors.white,
                     ),
-                  ),
-                ),
+                  );
+                },
                 backgroundDecoration:
                     const BoxDecoration(color: Colors.transparent),
                 pageController: _pageController,
@@ -109,34 +109,30 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
             ),
             child: SizedBox(
               height: 90,
-              width: double.infinity,
               child: ListView.builder(
                 shrinkWrap: true,
                 controller: _scrollController,
                 scrollDirection: Axis.horizontal,
                 itemCount: widget.images.length,
                 itemBuilder: (context, index) {
-                  final asset = widget.images[index];
+                  final assets = widget.images[index];
                   return GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
                       _pageController.jumpToPage(index);
-                      animationToOffset();
                     },
                     child: Container(
-                      decoration: index == _current
-                          ? BoxDecoration(
-                              border: Border.all(
-                                  color: AppColor.mainColor, width: 4))
-                          : null,
+                      decoration: BoxDecoration(
+                        border: index == _current
+                            ? Border.all(color: AppColor.mainColor, width: 4)
+                            : null,
+                      ),
                       width: itemW,
                       height: itemW,
-                      padding: index == _current
-                          ? const EdgeInsets.all(0)
-                          : EdgeInsets.all(margin),
-                      child: Image.file(
-                        File(asset.originalFilePath!),
-                        fit: BoxFit.cover,
+                      margin: const EdgeInsets.only(right: 6),
+                      child: ExtendedImage.memory(
+                        assets.thumnailBytes!,
+                        fit: BoxFit.fitWidth,
                       ),
                     ),
                   );
@@ -147,5 +143,14 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         ],
       ),
     );
+  }
+
+  Future<Uint8List?> _loadImage(ImageAsset asset) async {
+    final originFile = await asset.assetEntity.originFile;
+    if (originFile != null) {
+      return originFile.readAsBytes();
+    } else {
+      return null;
+    }
   }
 }

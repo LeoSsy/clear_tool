@@ -27,5 +27,6 @@
     "gotoClear" : " Go clean up",
     "zipOk" : "Compression completed",
     "zipErr" : "Compression failed",
-    "caculateSize" : "Under calculation"
+    "caculateSize" : "Under calculation",
+    "selImg" : "Please selected a Image"
     }

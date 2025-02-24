@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:app_settings/app_settings.dart';
@@ -11,12 +10,9 @@ import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
-import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:clear_tool/utils/toast_utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:group_grid_view/group_grid_view.dart';
 import 'package:photo_manager/photo_manager.dart';
 
@@ -38,7 +34,7 @@ class _SameImagePageState extends State<SameImagePage> {
   @override
   void initState() {
     super.initState();
-    samePhotos = PhotoManagerTool.sameImageEntity;
+    samePhotos = [...PhotoManagerTool.sameImageEntity];
     assetSortForGroups();
     allSelectedPhotos(true);
     streamSubscription = globalStreamControler.stream.listen((event) {
@@ -134,7 +130,10 @@ class _SameImagePageState extends State<SameImagePage> {
           samePhotos.isNotEmpty
               ? '${AppUtils.i18Translate('home.samePhoto', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
               : AppUtils.i18Translate('home.samePhoto', context: context),
-          style: const TextStyle(fontSize: 17, color: AppColor.textPrimary,fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              fontSize: 17,
+              color: AppColor.textPrimary,
+              fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         actions: [
@@ -260,8 +259,7 @@ class _SameImagePageState extends State<SameImagePage> {
                           onTap: () {
                             AppUtils.showImagePreviewDialog(
                                 AppUtils.globalContext!,
-                                samePhotos[indexPath.section]
-                                    .assets,
+                                samePhotos[indexPath.section].assets,
                                 indexPath.index);
                           },
                           child: Stack(
@@ -404,6 +402,12 @@ class _SameImagePageState extends State<SameImagePage> {
                       bottom: AppUtils.safeAreapadding.bottom + 12),
                   child: GestureDetector(
                     onTap: () async {
+                      if (selPhotos.isEmpty) {
+                        ToastUtil.showFailMsg(AppUtils.i18Translate(
+                            'home.selImg',
+                            context: context));
+                        return;
+                      }
                       PermissionState state1 =
                           await PhotoManager.requestPermissionExtend();
                       if (state1.isAuth) {
@@ -437,7 +441,8 @@ class _SameImagePageState extends State<SameImagePage> {
                               samePhotos.remove(delGroup);
                             }
                             setState(() {});
-                            globalStreamControler.add(SamePhotoDeleteEvent(deleIds, deleteTotalSize));
+                            globalStreamControler.add(
+                                SamePhotoDeleteEvent(deleIds, deleteTotalSize));
                             // ignore: use_build_context_synchronously
                             ToastUtil.showSuccessInfo(AppUtils.i18Translate(
                                 'home.deleteOK',

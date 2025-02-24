@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:math';
 
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
@@ -13,7 +13,6 @@ import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:clear_tool/utils/toast_utils.dart';
 import 'package:clear_tool/widget/empty_widget.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:photo_manager/photo_manager.dart';
 
@@ -35,24 +34,36 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
   @override
   void initState() {
     super.initState();
-    screenshots = PhotoManagerTool.screenShotImageEntity;
+    screenshots = [...PhotoManagerTool.screenShotImageEntity];
+    addListen();
+  }
+
+  Future removeListen() async {
+    await streamSubscription?.cancel();
+  }
+
+  void addListen() {
     streamSubscription = globalStreamControler.stream.listen((event) {
       if (event is ScreenPhotoEvent) {
         if (mounted && !isScrolling) {
-          setState(() {
-            for (var newAsset in PhotoManagerTool.screenShotImageEntity) {
-              final findCaches = screenshots
-                  .where((oldAsset) =>
-                      oldAsset.assetEntity.id == newAsset.assetEntity.id)
-                  .toList();
-              if (findCaches.isEmpty) {
-                screenshots.add(newAsset);
-              }
-            }
-          });
+          addPhotos();
         }
       } else if (event is RefreshEvent) {
-        if (mounted) setState(() {});
+        setState(() {});
+      }
+    });
+  }
+
+  void addPhotos() {
+    setState(() {
+      for (var newAsset in PhotoManagerTool.screenShotImageEntity) {
+        final findCaches = screenshots
+            .where((oldAsset) =>
+                oldAsset.assetEntity.id == newAsset.assetEntity.id)
+            .toList();
+        if (findCaches.isEmpty) {
+          screenshots.add(newAsset);
+        }
       }
     });
   }
@@ -170,9 +181,29 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                               final assets = screenshots[index];
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
-                                onTap: () {
-                                  AppUtils.showImagePreviewDialog(
-                                      context, screenshots, index);
+                                onTap: () async {
+                                  removeListen();
+                                  // 截取前后二十张图片
+                                  // final id = assets.assetEntity.id;
+                                  // final start = max(index - 20, 0);
+                                  // final end =
+                                  //     min(index + 20, screenshots.length);
+                                  // final tempList =
+                                  //     screenshots.sublist(start, end);
+                                  // var preIndex = 0;
+                                  // for (var i = 0; i < tempList.length; i++) {
+                                  //   if (tempList[i].assetEntity.id == id) {
+                                  //     preIndex = i;
+                                  //     break;
+                                  //   }
+                                  // }
+                                  await AppUtils.showImagePreviewDialog(
+                                    context,
+                                    screenshots,
+                                    index,
+                                  );
+                                  addPhotos();
+                                  addListen();
                                 },
                                 child: Stack(
                                   children: [
@@ -273,6 +304,11 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
               visible: screenshots.isNotEmpty,
               child: GestureDetector(
                 onTap: () async {
+                  if (selPhotos.isEmpty) {
+                    ToastUtil.showFailMsg(
+                        AppUtils.i18Translate('home.selImg', context: context));
+                    return;
+                  }
                   final state = await PermissionUtils.checkPhotosPermisson();
                   if (state) {
                     final deleList = await PhotoManager.editor.deleteWithIds(

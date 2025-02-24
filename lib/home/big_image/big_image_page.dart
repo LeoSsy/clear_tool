@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
@@ -35,25 +36,36 @@ class _BigImagePageState extends State<BigImagePage> {
   @override
   void initState() {
     super.initState();
-    // final appState = Provider.of<AppState>(context);
-    bigPhotos = PhotoManagerTool.bigImageEntity;
+    bigPhotos = [...PhotoManagerTool.bigImageEntity];
+    addListen();
+  }
+
+  void addListen() {
     streamSubscription = globalStreamControler.stream.listen((event) {
       if (event is BigPhotoEvent) {
         if (mounted && !isScrolling) {
-          setState(() {
-            for (var newAsset in PhotoManagerTool.bigImageEntity) {
-              final findCaches = bigPhotos
-                  .where((oldAsset) =>
-                      oldAsset.assetEntity.id == newAsset.assetEntity.id)
-                  .toList();
-              if (findCaches.isEmpty) {
-                bigPhotos.add(newAsset);
-              }
-            }
-          });
+          addPhotos();
         }
       } else if (event is RefreshEvent) {
         setState(() {});
+      }
+    });
+  }
+
+  Future removeListen() async {
+    await streamSubscription?.cancel();
+  }
+
+  void addPhotos() {
+    setState(() {
+      for (var newAsset in PhotoManagerTool.bigImageEntity) {
+        final findCaches = bigPhotos
+            .where((oldAsset) =>
+                oldAsset.assetEntity.id == newAsset.assetEntity.id)
+            .toList();
+        if (findCaches.isEmpty) {
+          bigPhotos.add(newAsset);
+        }
       }
     });
   }
@@ -105,7 +117,10 @@ class _BigImagePageState extends State<BigImagePage> {
           bigPhotos.isNotEmpty
               ? '${AppUtils.i18Translate('home.oversizedImage', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
               : AppUtils.i18Translate('home.oversizedImage', context: context),
-          style: const TextStyle(fontSize: 17, color: AppColor.textPrimary,fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              fontSize: 17,
+              color: AppColor.textPrimary,
+              fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         actions: [
@@ -182,11 +197,28 @@ class _BigImagePageState extends State<BigImagePage> {
                             itemBuilder: (context, index) {
                               final assets = bigPhotos[index];
                               return GestureDetector(
-                                onTap: () {
-                                  AppUtils.showImagePreviewDialog(
-                                      AppUtils.globalContext!,
-                                      bigPhotos,
-                                      index);
+                                onTap: () async {
+                                  removeListen();
+                                  // 截取前后二十张图片
+                                  // final id = assets.assetEntity.id;
+                                  // final start = max(index - 25, 0);
+                                  // final end = min(index + 25, bigPhotos.length);
+                                  // final tempList =
+                                  //     bigPhotos.sublist(start, end);
+                                  // var preIndex = 0;
+                                  // for (var i = 0; i < tempList.length; i++) {
+                                  //   if (tempList[i].assetEntity.id == id) {
+                                  //     preIndex = i;
+                                  //     break;
+                                  //   }
+                                  // }
+                                  await AppUtils.showImagePreviewDialog(
+                                    context,
+                                    bigPhotos,
+                                    index,
+                                  );
+                                  addPhotos();
+                                  addListen();
                                 },
                                 child: Stack(
                                   children: [
@@ -197,6 +229,8 @@ class _BigImagePageState extends State<BigImagePage> {
                                               assets.thumnailBytes!,
                                               width: imgW,
                                               fit: BoxFit.cover,
+                                              cacheWidth: imgW.toInt(),
+                                              cacheHeight: imgW.toInt(),
                                             )
                                           : FutureBuilder(
                                               future: _loadImage(assets),
@@ -208,6 +242,10 @@ class _BigImagePageState extends State<BigImagePage> {
                                                           snapshot.data!,
                                                           width: imgW,
                                                           fit: BoxFit.cover,
+                                                          cacheWidth:
+                                                              imgW.toInt(),
+                                                          cacheHeight:
+                                                              imgW.toInt(),
                                                         )
                                                       : Image.asset(
                                                           'assets/images/common/placeholder.png',
@@ -307,6 +345,11 @@ class _BigImagePageState extends State<BigImagePage> {
                   bottom: AppUtils.safeAreapadding.bottom + 12),
               child: GestureDetector(
                 onTap: () async {
+                  if (selPhotos.isEmpty) {
+                    ToastUtil.showFailMsg(
+                        AppUtils.i18Translate('home.selImg', context: context));
+                    return;
+                  }
                   PermissionState state1 =
                       await PhotoManager.requestPermissionExtend();
                   if (state1.hasAccess) {

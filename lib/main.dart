@@ -238,48 +238,6 @@ void spawnSamePhotosIsolate(SendPort port) async {
     "type": 'samePhoto',
     "progress": 33.33,
   });
-
-  // /// 分组逻辑
-  // List<Map<String, dynamic>> groups = [];
-  // Set<String> useHashId = <String>{};
-  // for (var i = 0; i < hashs.length; i++) {
-  //   final currentHash = hashs.keys.toList()[i];
-  //   Set<String> groupIds = <String>{};
-  //   if (useHashId.contains(currentHash)) continue;
-  //   useHashId.add(currentHash);
-  //   for (var j = 0; j < hashs.length; j++) {
-  //     final nextHash = hashs.keys.toList()[j];
-  //     if (useHashId.contains(nextHash)) continue;
-  //     if (currentHash == nextHash) continue;
-  //     final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
-  //     print('distance.....$distance');
-  //     if (distance > 0.8) {
-  //       useHashId.add(nextHash);
-  //       print('找到相似图片.....');
-  //       // 添加组
-  //       groupIds.add(hashs[currentHash]!.id);
-  //       groupIds.add(hashs[nextHash]!.id);
-  //     }
-  //   }
-  //   final index = hashs.keys.toList().indexOf(currentHash);
-  //   imageProcessProgress += (index / hashs.keys.length) * 33.33;
-  //   if (groupIds.length >= 2) {
-  //     groups.add(SamePhotoGroup(
-  //       id: groupIds.first,
-  //       title: '${groupIds.length}',
-  //       ids: groupIds.toList(),
-  //     ).toJson());
-  //     port.send({
-  //       "event": "sameEvent",
-  //       "data": SamePhotoGroup(
-  //         id: groupIds.first,
-  //         title: '${groupIds.length}',
-  //         ids: groupIds.toList(),
-  //       ).toJson(),
-  //     });
-  //   }
-  // }
-  // print('groups----->${groups.length}');
 }
 
 void main() async {
