@@ -36,7 +36,10 @@ class ClearPage extends HookWidget {
         elevation: 0,
         title: Text(
           AppUtils.i18Translate('home.smartClear'),
-          style: const TextStyle(fontSize: 15, color: AppColor.textPrimary),
+          style: const TextStyle(
+              fontSize: 17,
+              color: AppColor.textPrimary,
+              fontWeight: FontWeight.bold),
         ),
       ),
       body: CustomScrollView(
@@ -76,7 +79,10 @@ class ClearPage extends HookWidget {
                                 child: SizedBox(
                                   height: 4,
                                   child: LinearProgressIndicator(
-                                    value: (PhotoManagerTool.progress >= 98 ? 100 : PhotoManagerTool.progress) / 100,
+                                    value: (PhotoManagerTool.progress >= 98
+                                            ? 100
+                                            : PhotoManagerTool.progress) /
+                                        100,
                                     color: AppColor.mainColor,
                                     backgroundColor: AppColor.D7D7D7,
                                   ),
@@ -103,7 +109,7 @@ class ClearPage extends HookWidget {
                     borderRadius: BorderRadius.circular(10),
                     color: Colors.white,
                   ),
-                  height: 119.autoSize,
+                  height: 100.autoSize,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -138,7 +144,7 @@ class ClearPage extends HookWidget {
                               ? [
                                   const CupertinoActivityIndicator(
                                     color: AppColor.mainColor,
-                                    radius: 16,
+                                    radius: 20,
                                   )
                                 ]
                               : [
@@ -149,19 +155,14 @@ class ClearPage extends HookWidget {
                                             shrinkWrap: true,
                                             itemCount: 3,
                                             itemBuilder: (context, index) {
-                                              return ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 5),
-                                                  child: Image.asset(
-                                                    'assets/images/common/placeholder.png',
-                                                    fit: BoxFit.cover,
-                                                    width: 70.autoSize,
-                                                    height: 70.autoSize,
-                                                  ),
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 5),
+                                                child: Image.asset(
+                                                  'assets/images/common/placeholder.png',
+                                                  fit: BoxFit.cover,
+                                                  width: 60.autoSize,
+                                                  height: 60.autoSize,
                                                 ),
                                               );
                                             })
@@ -176,28 +177,23 @@ class ClearPage extends HookWidget {
                                             itemBuilder: (context, index) {
                                               final asset =
                                                   appState.samePhotos![index];
-                                              return ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 5),
-                                                  child: asset.thumnailBytes !=
-                                                          null
-                                                      ? Image.memory(
-                                                          asset.thumnailBytes!,
-                                                          fit: BoxFit.cover,
-                                                          width: 70.autoSize,
-                                                          height: 70.autoSize,
-                                                        )
-                                                      : Image.asset(
-                                                          'assets/images/common/placeholder.png',
-                                                          fit: BoxFit.cover,
-                                                          width: 70.autoSize,
-                                                          height: 70.autoSize,
-                                                        ),
-                                                ),
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 5),
+                                                child: asset.thumnailBytes !=
+                                                        null
+                                                    ? Image.memory(
+                                                        asset.thumnailBytes!,
+                                                        fit: BoxFit.cover,
+                                                        width: 60.autoSize,
+                                                        height: 60.autoSize,
+                                                      )
+                                                    : Image.asset(
+                                                        'assets/images/common/placeholder.png',
+                                                        fit: BoxFit.cover,
+                                                        width: 60.autoSize,
+                                                        height: 60.autoSize,
+                                                      ),
                                               );
                                             }),
                                   ),
@@ -220,8 +216,9 @@ class ClearPage extends HookWidget {
                                       child: Text(
                                         AppUtils.i18Translate('home.gotoClear'),
                                         style: const TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 14,
                                           color: Colors.white,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
@@ -239,7 +236,7 @@ class ClearPage extends HookWidget {
                     borderRadius: BorderRadius.circular(10),
                     color: Colors.white,
                   ),
-                  height: 119.autoSize,
+                  height: 100.autoSize,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,7 +270,7 @@ class ClearPage extends HookWidget {
                               ? [
                                   const CupertinoActivityIndicator(
                                     color: AppColor.mainColor,
-                                    radius: 16,
+                                    radius: 20,
                                   )
                                 ]
                               : [
@@ -284,19 +281,14 @@ class ClearPage extends HookWidget {
                                             shrinkWrap: true,
                                             itemCount: 3,
                                             itemBuilder: (context, index) {
-                                              return ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 5),
-                                                  child: Image.asset(
-                                                    'assets/images/common/placeholder.png',
-                                                    fit: BoxFit.cover,
-                                                    width: 70.autoSize,
-                                                    height: 70.autoSize,
-                                                  ),
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 5),
+                                                child: Image.asset(
+                                                  'assets/images/common/placeholder.png',
+                                                  fit: BoxFit.cover,
+                                                  width: 60.autoSize,
+                                                  height: 60.autoSize,
                                                 ),
                                               );
                                             })
@@ -311,28 +303,23 @@ class ClearPage extends HookWidget {
                                             itemBuilder: (context, index) {
                                               final asset =
                                                   appState.bigPhotos![index];
-                                              return ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 5),
-                                                  child: asset.thumnailBytes !=
-                                                          null
-                                                      ? Image.memory(
-                                                          asset.thumnailBytes!,
-                                                          fit: BoxFit.cover,
-                                                          width: 70.autoSize,
-                                                          height: 70.autoSize,
-                                                        )
-                                                      : Image.asset(
-                                                          'assets/images/common/placeholder.png',
-                                                          fit: BoxFit.cover,
-                                                          width: 70.autoSize,
-                                                          height: 70.autoSize,
-                                                        ),
-                                                ),
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 5),
+                                                child: asset.thumnailBytes !=
+                                                        null
+                                                    ? Image.memory(
+                                                        asset.thumnailBytes!,
+                                                        fit: BoxFit.cover,
+                                                        width: 60.autoSize,
+                                                        height: 60.autoSize,
+                                                      )
+                                                    : Image.asset(
+                                                        'assets/images/common/placeholder.png',
+                                                        fit: BoxFit.cover,
+                                                        width: 60.autoSize,
+                                                        height: 60.autoSize,
+                                                      ),
                                               );
                                             }),
                                   ),
@@ -355,8 +342,9 @@ class ClearPage extends HookWidget {
                                       child: Text(
                                         AppUtils.i18Translate('home.gotoClear'),
                                         style: const TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 14,
                                           color: Colors.white,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),
@@ -374,7 +362,7 @@ class ClearPage extends HookWidget {
                     borderRadius: BorderRadius.circular(10),
                     color: Colors.white,
                   ),
-                  height: 119.autoSize,
+                  height: 100.autoSize,
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -408,7 +396,7 @@ class ClearPage extends HookWidget {
                               ? [
                                   const CupertinoActivityIndicator(
                                     color: AppColor.mainColor,
-                                    radius: 16,
+                                    radius: 20,
                                   )
                                 ]
                               : [
@@ -419,19 +407,14 @@ class ClearPage extends HookWidget {
                                             shrinkWrap: true,
                                             itemCount: 3,
                                             itemBuilder: (context, index) {
-                                              return ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 5),
-                                                  child: Image.asset(
-                                                    'assets/images/common/placeholder.png',
-                                                    fit: BoxFit.cover,
-                                                    width: 70.autoSize,
-                                                    height: 70.autoSize,
-                                                  ),
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 5),
+                                                child: Image.asset(
+                                                  'assets/images/common/placeholder.png',
+                                                  fit: BoxFit.cover,
+                                                  width: 60.autoSize,
+                                                  height: 60.autoSize,
                                                 ),
                                               );
                                             })
@@ -446,28 +429,23 @@ class ClearPage extends HookWidget {
                                             itemBuilder: (context, index) {
                                               final asset =
                                                   appState.screenPhotos![index];
-                                              return ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                                child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.only(
-                                                          right: 5),
-                                                  child: asset.thumnailBytes !=
-                                                          null
-                                                      ? Image.memory(
-                                                          asset.thumnailBytes!,
-                                                          fit: BoxFit.cover,
-                                                          width: 70.autoSize,
-                                                          height: 70.autoSize,
-                                                        )
-                                                      : Image.asset(
-                                                          'assets/images/common/placeholder.png',
-                                                          fit: BoxFit.cover,
-                                                          width: 70.autoSize,
-                                                          height: 70.autoSize,
-                                                        ),
-                                                ),
+                                              return Padding(
+                                                padding: const EdgeInsets.only(
+                                                    right: 5),
+                                                child: asset.thumnailBytes !=
+                                                        null
+                                                    ? Image.memory(
+                                                        asset.thumnailBytes!,
+                                                        fit: BoxFit.cover,
+                                                        width: 60.autoSize,
+                                                        height: 60.autoSize,
+                                                      )
+                                                    : Image.asset(
+                                                        'assets/images/common/placeholder.png',
+                                                        fit: BoxFit.cover,
+                                                        width: 60.autoSize,
+                                                        height: 60.autoSize,
+                                                      ),
                                               );
                                             }),
                                   ),
@@ -491,8 +469,9 @@ class ClearPage extends HookWidget {
                                       child: Text(
                                         AppUtils.i18Translate('home.gotoClear'),
                                         style: const TextStyle(
-                                          fontSize: 11,
+                                          fontSize: 14,
                                           color: Colors.white,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
                                     ),

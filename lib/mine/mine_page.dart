@@ -36,7 +36,7 @@ class _MinePageState extends State<MinePage> {
         elevation: 0,
         title: Text(
           AppUtils.i18Translate('common.mine',context: context),
-          style: const TextStyle(fontSize: 15, color: AppColor.textPrimary),
+          style: const TextStyle(fontSize: 17, color: AppColor.textPrimary,fontWeight: FontWeight.bold),
         ),
       ),
       body: CustomScrollView(

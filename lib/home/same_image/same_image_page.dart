@@ -134,7 +134,7 @@ class _SameImagePageState extends State<SameImagePage> {
           samePhotos.isNotEmpty
               ? '${AppUtils.i18Translate('home.samePhoto', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
               : AppUtils.i18Translate('home.samePhoto', context: context),
-          style: const TextStyle(fontSize: 15, color: AppColor.textPrimary),
+          style: const TextStyle(fontSize: 17, color: AppColor.textPrimary,fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         actions: [
@@ -261,9 +261,7 @@ class _SameImagePageState extends State<SameImagePage> {
                             AppUtils.showImagePreviewDialog(
                                 AppUtils.globalContext!,
                                 samePhotos[indexPath.section]
-                                    .assets
-                                    .map((e) => e.originalFilePath!)
-                                    .toList(),
+                                    .assets,
                                 indexPath.index);
                           },
                           child: Stack(

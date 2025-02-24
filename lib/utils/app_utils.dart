@@ -39,59 +39,49 @@ class AppUtils {
     try {
       final unit = ['B', 'KB', 'MB', 'GB'];
       final tp = (log(size) / log(imgUnitOfAccount)).floor();
-      return '${(size / pow(imgUnitOfAccount, tp)).toStringAsFixed(2)}${unit[tp.toInt()]}';
+      return '${(size / pow(imgUnitOfAccount, tp)).ceil().toStringAsFixed(0)}${unit[tp.toInt()]}';
     } catch (e) {
       return '0KB';
     }
   }
-
+  
   /// 预览图片
-  /// [images]  图片数组 可以传入类型如下：List<File> 、List<dynamic>? 、 dynamic 、 List<dynamic>
+  /// [images]  图片数组 可以传入类型如下：List<ImageAsset>
   ///  图片数组内部元素可以是： 网络地址、本地文件地址、本地项目图片资源地址
-  static showImagePreviewDialog(BuildContext context, dynamic images,
+  static showImagePreviewDialog(BuildContext context, List<ImageAsset> images,
       [int index = 0]) {
-    if (images == null) return;
-    List<String> imgs = [];
-    if (images is List<File>) {
-      for (var element in images) {
-        imgs.add(element.path);
-      }
-    } else if (images is List<dynamic>) {
-      for (dynamic element in images) {
-        if (element is File) {
-          imgs.add(element.path);
-        } else if (element is String) {
-          imgs.add(element);
-        }
-      }
-    }
-
+    if (images.isEmpty) return;
     showDialog(
       context: context,
       barrierDismissible: true,
       barrierColor: Colors.black,
+      useSafeArea: false,
       builder: (BuildContext context) {
-        return Material(
-          color: Colors.black,
-          child: Stack(
-            children: [
-              ImagePreviewWidget(
-                images: imgs,
-                index: index,
-              ),
-              Positioned(
-                right: 12,
-                top: AppUtils.safeAreapadding.top + 12,
-                child: IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(
-                    Icons.close,
-                    color: Colors.white,
-                    size: 30,
+        return SafeArea(
+          bottom: false,
+          top: false,
+          child: Material(
+            color: Colors.black,
+            child: Stack(
+              children: [
+                ImagePreviewWidget(
+                  images: images,
+                  index: index,
+                ),
+                Positioned(
+                  right: 12,
+                  top: AppUtils.safeAreapadding.top + 12,
+                  child: IconButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    icon: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 30,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

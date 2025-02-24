@@ -105,9 +105,9 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
               ? '${AppUtils.i18Translate('home.screenshot', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
               : AppUtils.i18Translate('home.screenshot', context: context),
           style: const TextStyle(
-            fontSize: 15,
-            color: AppColor.textPrimary,
-          ),
+              fontSize: 17,
+              color: AppColor.textPrimary,
+              fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         actions: [
@@ -169,13 +169,10 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                             itemBuilder: (context, index) {
                               final assets = screenshots[index];
                               return GestureDetector(
+                                behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   AppUtils.showImagePreviewDialog(
-                                      context,
-                                      screenshots
-                                          .map((e) => e.originalFilePath!)
-                                          .toList(),
-                                      index);
+                                      context, screenshots, index);
                                 },
                                 child: Stack(
                                   children: [

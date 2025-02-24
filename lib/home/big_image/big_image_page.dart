@@ -105,7 +105,7 @@ class _BigImagePageState extends State<BigImagePage> {
           bigPhotos.isNotEmpty
               ? '${AppUtils.i18Translate('home.oversizedImage', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
               : AppUtils.i18Translate('home.oversizedImage', context: context),
-          style: const TextStyle(fontSize: 15, color: AppColor.textPrimary),
+          style: const TextStyle(fontSize: 17, color: AppColor.textPrimary,fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         actions: [
@@ -185,9 +185,7 @@ class _BigImagePageState extends State<BigImagePage> {
                                 onTap: () {
                                   AppUtils.showImagePreviewDialog(
                                       AppUtils.globalContext!,
-                                      bigPhotos
-                                          .map((e) => e.originalFilePath!)
-                                          .toList(),
+                                      bigPhotos,
                                       index);
                                 },
                                 child: Stack(

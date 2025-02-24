@@ -33,7 +33,7 @@ class HomeScreen extends HookWidget {
                 child: Text(
                   AppUtils.i18Translate("home.manualClear", context: context),
                   style: const TextStyle(
-                    fontSize: 16.5,
+                    fontSize: 18.5,
                     color: AppColor.textPrimary,
                   ),
                 ),
@@ -84,7 +84,7 @@ class HomeScreen extends HookWidget {
                         AppUtils.i18Translate("home.samePhoto",
                             context: context),
                         style: TextStyle(
-                          fontSize: 13.autoSize,
+                          fontSize: 15.autoSize,
                           color: AppColor.textPrimary,
                         ),
                       ),
@@ -110,7 +110,7 @@ class HomeScreen extends HookWidget {
                               Text(
                                 '${appState.sameCount()} ${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
-                                  fontSize: 8.autoSize,
+                                  fontSize: 10.autoSize,
                                   color: const Color(0xff5E1FB2),
                                 ),
                               ),
@@ -119,7 +119,7 @@ class HomeScreen extends HookWidget {
                                     ? AppUtils.fileSizeFormat(appState.samePhotoSize)
                                     : '0KB',
                                 style: TextStyle(
-                                  fontSize: 8.autoSize,
+                                  fontSize: 10.autoSize,
                                   color: const Color(0xff5E1FB2),
                                 ),
                               ),
@@ -128,7 +128,7 @@ class HomeScreen extends HookWidget {
                           const Spacer(),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
-                            size: 6.autoSize,
+                            size: 8.autoSize,
                             color: const Color(0xff5E1FB2),
                           )
                         ],
@@ -171,7 +171,7 @@ class HomeScreen extends HookWidget {
                         AppUtils.i18Translate("home.bigPhoto",
                             context: context),
                         style: TextStyle(
-                          fontSize: 13.autoSize,
+                          fontSize: 15.autoSize,
                           color: AppColor.textPrimary,
                         ),
                       ),
@@ -197,14 +197,14 @@ class HomeScreen extends HookWidget {
                               Text(
                                 '${PhotoManagerTool.bigImageEntity.length} ${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
-                                  fontSize: 8.autoSize!,
+                                  fontSize: 10.autoSize!,
                                   color: const Color(0xff1C6EAA),
                                 ),
                               ),
                               Text(
                                 appState.bigPhotoSize > 0 ? AppUtils.fileSizeFormat(appState.bigPhotoSize) : '0KB',
                                 style: TextStyle(
-                                  fontSize: 8.autoSize!,
+                                  fontSize: 10.autoSize!,
                                   color: const Color(0xff1C6EAA),
                                 ),
                               ),
@@ -213,7 +213,7 @@ class HomeScreen extends HookWidget {
                           const Spacer(),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
-                            size: 6.autoSize,
+                            size: 8.autoSize,
                             color: const Color(0xff1C6EAA),
                           )
                         ],
@@ -257,7 +257,7 @@ class HomeScreen extends HookWidget {
                         AppUtils.i18Translate("home.screenshot",
                             context: context),
                         style: TextStyle(
-                          fontSize: 13.autoSize,
+                          fontSize: 15.autoSize,
                           color: AppColor.textPrimary,
                         ),
                       ),
@@ -283,7 +283,7 @@ class HomeScreen extends HookWidget {
                               Text(
                                 '${appState.screenPhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}',
                                 style: TextStyle(
-                                  fontSize: 8.autoSize!,
+                                  fontSize: 10.autoSize!,
                                   color: const Color(0xff1B5FC4),
                                 ),
                               ),
@@ -292,7 +292,7 @@ class HomeScreen extends HookWidget {
                                     ? AppUtils.fileSizeFormat(appState.screenPhotoSize)
                                     : '0KB',
                                 style: TextStyle(
-                                  fontSize: 8.autoSize!,
+                                  fontSize: 10.autoSize!,
                                   color: const Color(0xff1B5FC4),
                                 ),
                               ),
@@ -301,7 +301,7 @@ class HomeScreen extends HookWidget {
                           const Spacer(),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
-                            size: 6.autoSize,
+                            size: 8.autoSize,
                             color: const Color(0xff1B5FC4),
                           )
                         ],
@@ -327,7 +327,7 @@ class HomeScreen extends HookWidget {
         left: 12,
         right: 12,
       ),
-      height: 369.autoSize,
+      height: 390.autoSize,
       decoration: const BoxDecoration(
         borderRadius: BorderRadius.all(Radius.circular(8)),
         gradient: LinearGradient(
@@ -342,12 +342,15 @@ class HomeScreen extends HookWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            '${appState.deviceName} ${AppUtils.i18Translate("home.diskSpace")}',
-            style: const TextStyle(
-              fontSize: 17.5,
-              color: AppColor.textPrimary,
-              fontWeight: FontWeight.bold,
+          Padding(
+            padding: EdgeInsets.only(bottom: 3.autoSize!),
+            child: Text(
+              '${appState.deviceName} ${AppUtils.i18Translate("home.diskSpace")}',
+              style: const TextStyle(
+                fontSize: 19.5,
+                color: AppColor.textPrimary,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           Row(
@@ -356,14 +359,14 @@ class HomeScreen extends HookWidget {
                 '${AppUtils.i18Translate("home.useSpace")}${appState.useSize},',
                 style: const TextStyle(
                   fontSize: 13,
-                  color: AppColor.textSecondary,
+                  color: AppColor.textPrimary,
                 ),
               ),
               Text(
-                '${AppUtils.i18Translate("home.totalSpace")} ${appState.totalSize}',
+                '${AppUtils.i18Translate("home.totalSpace")}${appState.totalSize}',
                 style: const TextStyle(
                   fontSize: 13,
-                  color: AppColor.textSecondary,
+                  color: AppColor.textPrimary,
                 ),
               ),
             ],
@@ -381,15 +384,15 @@ class HomeScreen extends HookWidget {
                   ),
                   Container(
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(circleSize * 0.6 / 2),
+                      borderRadius: BorderRadius.circular(circleSize * 0.7 / 2),
                       color: Colors.white,
                     ),
-                    width: circleSize * 0.6,
-                    height: circleSize * 0.6,
+                    width: circleSize * 0.7,
+                    height: circleSize * 0.7,
                   ),
                   SizedBox(
-                    width: circleSize * 0.6,
-                    height: circleSize * 0.6,
+                    width: circleSize * 0.7,
+                    height: circleSize * 0.7,
                     child: Transform.rotate(
                       angle: 90 * pi / 180,
                       child: cp.CircleProgressBar(
@@ -406,7 +409,7 @@ class HomeScreen extends HookWidget {
                       Text(
                         AppUtils.i18Translate('home.useSpace'),
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 16,
                           color: AppColor.textPrimary,
                         ),
                       ),
@@ -417,7 +420,7 @@ class HomeScreen extends HookWidget {
                             child: Text(
                               appState.circleProgress.toStringAsFixed(0),
                               style: const TextStyle(
-                                fontSize: 43,
+                                fontSize: 46,
                                 color: AppColor.textPrimary,
                                 fontWeight: FontWeight.bold,
                                 height: 1,
@@ -430,7 +433,7 @@ class HomeScreen extends HookWidget {
                               child: Text(
                                 '%',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: 21,
                                   color: AppColor.textPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -460,12 +463,12 @@ class HomeScreen extends HookWidget {
                 ),
                 width: 176.autoSize,
                 height: 40.autoSize,
-                margin: const EdgeInsets.only(bottom: 10),
+                margin: const EdgeInsets.only(bottom: 28),
                 alignment: Alignment.center,
                 child: Text(
                   AppUtils.i18Translate('home.smartClear'),
                   style: TextStyle(
-                    fontSize: 15.autoSize,
+                    fontSize: 17.autoSize,
                     color: Colors.white,
                   ),
                 ),
