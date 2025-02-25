@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 import 'dart:typed_data';
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
@@ -13,6 +12,8 @@ import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/toast_utils.dart';
 import 'package:clear_tool/widget/empty_widget.dart';
+import 'package:extended_image/extended_image.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:mmkv/mmkv.dart';
@@ -30,44 +31,15 @@ class _BigImagePageState extends State<BigImagePage> {
   List<ImageAsset> bigPhotos = [];
   List<ImageAsset> selPhotos = [];
   bool isAllSel = false;
-  StreamSubscription? streamSubscription;
   bool isScrolling = false;
+
+  int totalSize = 0;
 
   @override
   void initState() {
     super.initState();
     bigPhotos = [...PhotoManagerTool.bigImageEntity];
-    addListen();
-  }
-
-  void addListen() {
-    streamSubscription = globalStreamControler.stream.listen((event) {
-      if (event is BigPhotoEvent) {
-        if (mounted && !isScrolling) {
-          addPhotos();
-        }
-      } else if (event is RefreshEvent) {
-        setState(() {});
-      }
-    });
-  }
-
-  Future removeListen() async {
-    await streamSubscription?.cancel();
-  }
-
-  void addPhotos() {
-    setState(() {
-      for (var newAsset in PhotoManagerTool.bigImageEntity) {
-        final findCaches = bigPhotos
-            .where((oldAsset) =>
-                oldAsset.assetEntity.id == newAsset.assetEntity.id)
-            .toList();
-        if (findCaches.isEmpty) {
-          bigPhotos.add(newAsset);
-        }
-      }
-    });
+    totalSize = PhotoManagerTool.bigSumSize;
   }
 
   allSelectedPhotos(bool isAllSel) {
@@ -90,7 +62,6 @@ class _BigImagePageState extends State<BigImagePage> {
 
   @override
   void dispose() {
-    streamSubscription?.cancel();
     allSelectedPhotos(false);
     super.dispose();
   }
@@ -99,51 +70,60 @@ class _BigImagePageState extends State<BigImagePage> {
   Widget build(BuildContext context) {
     final imgW = AppUtils.screenW / 4;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        leading: GestureDetector(
-          onTap: () {
-            Navigator.of(context).pop();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Image.asset(
-              'assets/images/common/back.png',
+      appBar: PreferredSize(
+        preferredSize: const Size(0, 50),
+        child: SafeArea(
+          child: SizedBox(
+            height: 50,
+            child: Row(
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
+                    child: Image.asset(
+                      'assets/images/common/back.png',
+                    ),
+                  ),
+                ),
+                Text(
+                  bigPhotos.isNotEmpty
+                      ? '${AppUtils.i18Translate('home.oversizedImage', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
+                      : AppUtils.i18Translate('home.oversizedImage',
+                          context: context),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    color: AppColor.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Visibility(
+                  visible: bigPhotos.isNotEmpty,
+                  child: TextButton(
+                      onPressed: () {
+                        isAllSel = !isAllSel;
+                        allSelectedPhotos(isAllSel);
+                      },
+                      child: Text(
+                        isAllSel
+                            ? AppUtils.i18Translate('home.unSelectedAll',
+                                context: context)
+                            : AppUtils.i18Translate('home.selectedAll',
+                                context: context),
+                        style: TextStyle(
+                          fontSize: 14.autoSize,
+                          color: AppColor.mainColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )),
+                )
+              ],
             ),
           ),
         ),
-        centerTitle: true,
-        title: Text(
-          bigPhotos.isNotEmpty
-              ? '${AppUtils.i18Translate('home.oversizedImage', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
-              : AppUtils.i18Translate('home.oversizedImage', context: context),
-          style: const TextStyle(
-              fontSize: 17,
-              color: AppColor.textPrimary,
-              fontWeight: FontWeight.bold),
-        ),
-        elevation: 0,
-        actions: [
-          Visibility(
-            visible: bigPhotos.isNotEmpty,
-            child: TextButton(
-                onPressed: () {
-                  isAllSel = !isAllSel;
-                  allSelectedPhotos(isAllSel);
-                },
-                child: Text(
-                  isAllSel
-                      ? AppUtils.i18Translate('home.unSelectedAll',
-                          context: context)
-                      : AppUtils.i18Translate('home.selectedAll',
-                          context: context),
-                  style: TextStyle(
-                    fontSize: 11.autoSize,
-                    color: AppColor.mainColor,
-                  ),
-                )),
-          )
-        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -153,9 +133,9 @@ class _BigImagePageState extends State<BigImagePage> {
             child: Padding(
               padding: const EdgeInsets.all(9),
               child: Text(
-                '${bigPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)},${AppUtils.fileSizeFormat(PhotoManagerTool.bigSumSize)}',
+                '${bigPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)},${AppUtils.fileSizeFormat(totalSize)}',
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: 15,
                   color: AppColor.textPrimary,
                   fontWeight: FontWeight.w500,
                 ),
@@ -198,65 +178,50 @@ class _BigImagePageState extends State<BigImagePage> {
                               final assets = bigPhotos[index];
                               return GestureDetector(
                                 onTap: () async {
-                                  removeListen();
-                                  // 截取前后二十张图片
-                                  // final id = assets.assetEntity.id;
-                                  // final start = max(index - 25, 0);
-                                  // final end = min(index + 25, bigPhotos.length);
-                                  // final tempList =
-                                  //     bigPhotos.sublist(start, end);
-                                  // var preIndex = 0;
-                                  // for (var i = 0; i < tempList.length; i++) {
-                                  //   if (tempList[i].assetEntity.id == id) {
-                                  //     preIndex = i;
-                                  //     break;
-                                  //   }
-                                  // }
-                                  await AppUtils.showImagePreviewDialog(
+                                  AppUtils.showImagePreviewDialog(
                                     context,
                                     bigPhotos,
                                     index,
                                   );
-                                  addPhotos();
-                                  addListen();
                                 },
                                 child: Stack(
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
                                       child: assets.thumnailBytes != null
-                                          ? Image.memory(
+                                          ? ExtendedImage.memory(
                                               assets.thumnailBytes!,
-                                              width: imgW,
                                               fit: BoxFit.cover,
-                                              cacheWidth: imgW.toInt(),
-                                              cacheHeight: imgW.toInt(),
+                                              width: imgW,
+                                              height: imgW,
                                             )
                                           : FutureBuilder(
-                                              future: _loadImage(assets),
+                                              future: _loadImage(
+                                                  assets,
+                                                  imgW.toInt() * 5,
+                                                  imgW.toInt() * 5),
                                               builder: (context, snapshot) {
                                                 if (snapshot.connectionState ==
                                                     ConnectionState.done) {
                                                   return snapshot.data != null
-                                                      ? Image.memory(
-                                                          snapshot.data!,
-                                                          width: imgW,
+                                                      ? ExtendedImage.memory(
+                                                          assets.thumnailBytes!,
                                                           fit: BoxFit.cover,
-                                                          cacheWidth:
-                                                              imgW.toInt(),
-                                                          cacheHeight:
-                                                              imgW.toInt(),
+                                                          width: imgW,
+                                                          height: imgW,
                                                         )
                                                       : Image.asset(
                                                           'assets/images/common/placeholder.png',
                                                           fit: BoxFit.cover,
                                                           width: imgW,
+                                                          height: imgW,
                                                         );
                                                 } else {
                                                   return Image.asset(
                                                     'assets/images/common/placeholder.png',
                                                     fit: BoxFit.cover,
                                                     width: imgW,
+                                                    height: imgW,
                                                   );
                                                 }
                                               },
@@ -432,17 +397,18 @@ class _BigImagePageState extends State<BigImagePage> {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(8),
                     color: AppColor.mainColor,
                   ),
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   alignment: Alignment.center,
                   child: Text(
                     '${AppUtils.i18Translate('home.zip', context: context)} ${selPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)}',
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 16,
                       color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -454,8 +420,9 @@ class _BigImagePageState extends State<BigImagePage> {
     );
   }
 
-  Future<Uint8List?> _loadImage(ImageAsset asset) async {
-    final thumbnailData = await asset.assetEntity.thumbnailData;
+  Future<Uint8List?> _loadImage(ImageAsset asset, int imgW, int imgH) async {
+    final thumbnailData = await asset.assetEntity
+        .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
     if (thumbnailData != null) {
       asset.thumnailBytes = thumbnailData;
       return thumbnailData;

@@ -11,8 +11,11 @@ import 'package:clear_tool/main.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/toast_utils.dart';
+import 'package:clear_tool/widget/empty_widget.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:group_grid_view/group_grid_view.dart';
 import 'package:photo_manager/photo_manager.dart';
 
@@ -28,35 +31,16 @@ class _SameImagePageState extends State<SameImagePage> {
   List<SamePhotoGroup> samePhotos = [];
   List<ImageAsset> selPhotos = [];
   bool isAllSel = false;
-  StreamSubscription? streamSubscription;
   bool isScrolling = false;
+  int totalSize = 0;
 
   @override
   void initState() {
     super.initState();
     samePhotos = [...PhotoManagerTool.sameImageEntity];
+    totalSize = PhotoManagerTool.samePhotoSize;
     assetSortForGroups();
     allSelectedPhotos(true);
-    streamSubscription = globalStreamControler.stream.listen((event) {
-      if (event is SamePhotoEvent) {
-        if (mounted && !isScrolling) {
-          setState(() {
-            for (var newAsset in PhotoManagerTool.sameImageEntity) {
-              final findCaches = samePhotos
-                  .where((oldAsset) => oldAsset.id == newAsset.id)
-                  .toList();
-              if (findCaches.isEmpty) {
-                samePhotos.add(newAsset);
-              }
-            }
-            assetSortForGroups();
-            allSelectedPhotos(true);
-          });
-        }
-      } else if (event is RefreshEvent) {
-        setState(() {});
-      }
-    });
   }
 
   /// 分组内图片按照大小排序
@@ -104,75 +88,76 @@ class _SameImagePageState extends State<SameImagePage> {
 
   @override
   void dispose() {
-    streamSubscription?.cancel();
     allSelectedPhotos(false);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final imgW = AppUtils.screenW / 4;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        leading: GestureDetector(
-          onTap: () {
-            Navigator.of(context).pop();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Image.asset(
-              'assets/images/common/back.png',
+      appBar: PreferredSize(
+        preferredSize: const Size(0, 50),
+        child: SafeArea(
+          child: SizedBox(
+            height: 50,
+            child: Row(
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
+                    child: Image.asset(
+                      'assets/images/common/back.png',
+                    ),
+                  ),
+                ),
+                Text(
+                  samePhotos.isNotEmpty
+                      ? '${AppUtils.i18Translate('home.samePhoto', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
+                      : AppUtils.i18Translate('home.samePhoto',
+                          context: context),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    color: AppColor.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Visibility(
+                  visible: samePhotos.isNotEmpty,
+                  child: TextButton(
+                      onPressed: () {
+                        isAllSel = !isAllSel;
+                        allSelectedPhotos(isAllSel);
+                      },
+                      child: Text(
+                        isAllSel
+                            ? AppUtils.i18Translate('home.unSelectedAll',
+                                context: context)
+                            : AppUtils.i18Translate('home.selectedAll',
+                                context: context),
+                        style: TextStyle(
+                          fontSize: 14.autoSize,
+                          color: AppColor.mainColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )),
+                )
+              ],
             ),
           ),
         ),
-        centerTitle: true,
-        title: Text(
-          samePhotos.isNotEmpty
-              ? '${AppUtils.i18Translate('home.samePhoto', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
-              : AppUtils.i18Translate('home.samePhoto', context: context),
-          style: const TextStyle(
-              fontSize: 17,
-              color: AppColor.textPrimary,
-              fontWeight: FontWeight.bold),
-        ),
-        elevation: 0,
-        actions: [
-          TextButton(
-              onPressed: () {
-                isAllSel = !isAllSel;
-                allSelectedPhotos(isAllSel);
-              },
-              child: Text(
-                isAllSel
-                    ? AppUtils.i18Translate('home.unSelectedAll',
-                        context: context)
-                    : AppUtils.i18Translate('home.selectedAll',
-                        context: context),
-                style: TextStyle(
-                  fontSize: 11.autoSize,
-                  color: AppColor.mainColor,
-                ),
-              ))
-        ],
       ),
       body: samePhotos.isEmpty
-          ? const Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CupertinoActivityIndicator(
-                    color: AppColor.mainColor,
-                    radius: 10,
-                  ),
-                  SizedBox(width: 5),
-                  Text(
-                    '检测中，请稍等...',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColor.textPrimary,
-                    ),
-                  )
-                ],
+          ? Center(
+              child: EmptyWidget(
+                title: AppUtils.i18Translate(
+                  'common.noFilesClean',
+                  context: context,
+                ),
               ),
             )
           : Column(
@@ -209,7 +194,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                       '${samePhotos[section].assets.length} ${AppUtils.i18Translate('home.aImage', context: context)},${AppUtils.fileSizeFormat(samePhotos[section].totalSize)}',
                                       style: const TextStyle(
                                         color: AppColor.textPrimary,
-                                        fontSize: 12,
+                                        fontSize: 15,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     )
@@ -223,7 +208,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                             '${samePhotos[section].assets.length} ${AppUtils.i18Translate('home.aImage', context: context)},${snapshot.data}',
                                             style: const TextStyle(
                                               color: AppColor.textPrimary,
-                                              fontSize: 12,
+                                              fontSize: 15,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           );
@@ -234,7 +219,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                                 '${samePhotos[section].assets.length} ${AppUtils.i18Translate('home.aImage', context: context)}',
                                                 style: const TextStyle(
                                                   color: AppColor.textPrimary,
-                                                  fontSize: 12,
+                                                  fontSize: 15,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
@@ -243,7 +228,7 @@ class _SameImagePageState extends State<SameImagePage> {
                                               Text(
                                                 '${AppUtils.i18Translate('homde.caculateSize', context: context)}...',
                                                 style: const TextStyle(
-                                                  fontSize: 9,
+                                                  fontSize: 12,
                                                   color: AppColor.subTitle999,
                                                 ),
                                               )
@@ -269,19 +254,27 @@ class _SameImagePageState extends State<SameImagePage> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(4),
                                 child: assets.thumnailBytes != null
-                                    ? Image.memory(
+                                    ? ExtendedImage.memory(
                                         assets.thumnailBytes!,
                                         fit: BoxFit.cover,
+                                        width: imgW,
+                                        height: imgW,
+                                        cacheWidth: imgW.toInt(),
+                                        cacheHeight: imgW.toInt(),
                                       )
                                     : FutureBuilder(
-                                        future: _loadImage(assets),
+                                        future: _loadImage(assets,imgW.toInt()*5,imgW.toInt()*5),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState ==
                                               ConnectionState.done) {
                                             return snapshot.data != null
-                                                ? Image.memory(
-                                                    snapshot.data!,
+                                                ? ExtendedImage.memory(
+                                                    assets.thumnailBytes!,
                                                     fit: BoxFit.cover,
+                                                    width: imgW,
+                                                    height: imgW,
+                                                    cacheWidth: imgW.toInt(),
+                                                    cacheHeight: imgW.toInt(),
                                                   )
                                                 : Image.asset(
                                                     'assets/images/common/placeholder.png',
@@ -306,15 +299,15 @@ class _SameImagePageState extends State<SameImagePage> {
                                       decoration: const BoxDecoration(
                                         color: AppColor.mainColor,
                                       ),
-                                      width: 24,
-                                      height: 13,
+                                      width: 36,
+                                      height: 20,
                                       alignment: Alignment.center,
                                       child: Text(
                                         AppUtils.i18Translate(
                                             'common.bestImage',
                                             context: context),
                                         style: const TextStyle(
-                                          fontSize: 9,
+                                          fontSize: 14,
                                           color: Colors.white,
                                         ),
                                       ),
@@ -467,17 +460,18 @@ class _SameImagePageState extends State<SameImagePage> {
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(4),
+                        borderRadius: BorderRadius.circular(8),
                         color: AppColor.mainColor,
                       ),
                       width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       alignment: Alignment.center,
                       child: Text(
                         '${AppUtils.i18Translate('home.delete', context: context)} ${selPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)}',
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: 16,
                           color: Colors.white,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
@@ -488,8 +482,8 @@ class _SameImagePageState extends State<SameImagePage> {
     );
   }
 
-  Future<Uint8List?> _loadImage(ImageAsset asset) async {
-    final thumbnailData = await asset.assetEntity.thumbnailData;
+  Future<Uint8List?> _loadImage(ImageAsset asset,int imgW,int imgH) async {
+    final thumbnailData = await asset.assetEntity.thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
     if (thumbnailData != null) {
       asset.thumnailBytes = thumbnailData;
       return thumbnailData;

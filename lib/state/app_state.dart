@@ -61,27 +61,10 @@ class AppState extends ChangeNotifier {
   double screenshotPhotoProgress = 0;
   double samePhotoProgress = 0;
 
-  String? _languageCode;
-
   @override
   void dispose() {
     super.dispose();
     _streamSubscription.cancel();
-  }
-
-  /// change lanuage
-  void changeLanguage() async {
-    // WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-    //   final local = FlutterI18n.currentLocale(AppUtils.globalContext!);
-    //   if (_languageCode != null && _languageCode == local?.languageCode) {
-    //     return;
-    //   }
-    //   _languageCode = local?.languageCode;
-    //   final nextLang =
-    //       local?.languageCode == 'en' ? const Locale('en') : const Locale('zh');
-    //   await FlutterI18n.refresh(AppUtils.globalContext!, nextLang);
-    //   notifyListeners();
-    // });
   }
 
   AppState() {
@@ -121,7 +104,9 @@ class AppState extends ChangeNotifier {
               final file = await assetEntity.originFile;
               if (file != null) {
                 final length = await file.length();
-                final thumbnailData = await assetEntity.thumbnailData;
+                final thumbnailData = await assetEntity.thumbnailDataWithSize(
+                    ThumbnailSize(
+                        AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
                 group.assets.add(ImageAsset(assetEntity)
                   ..originalFilePath = file.path
                   ..thumnailBytes = thumbnailData
@@ -170,7 +155,9 @@ class AppState extends ChangeNotifier {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
           final file = await assetEntity.originFile;
           if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailData;
+            final thumbnailData = await assetEntity.thumbnailDataWithSize(
+                ThumbnailSize(
+                    AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
             newAssetList.add(ImageAsset(assetEntity)
               ..originalFilePath = file.path
               ..thumnailBytes = thumbnailData);
@@ -184,7 +171,9 @@ class AppState extends ChangeNotifier {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
           final file = await assetEntity.originFile;
           if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailData;
+            final thumbnailData = await assetEntity.thumbnailDataWithSize(
+                ThumbnailSize(
+                    AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
             newAssetList.add(ImageAsset(assetEntity)
               ..originalFilePath = file.path
               ..thumnailBytes = thumbnailData);
@@ -214,7 +203,9 @@ class AppState extends ChangeNotifier {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
           final file = await assetEntity.originFile;
           if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailData;
+            final thumbnailData = await assetEntity.thumbnailDataWithSize(
+                ThumbnailSize(
+                    AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
             newAssetList.add(ImageAsset(assetEntity)
               ..originalFilePath = file.path
               ..thumnailBytes = thumbnailData);
@@ -228,7 +219,9 @@ class AppState extends ChangeNotifier {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
           final file = await assetEntity.originFile;
           if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailData;
+            final thumbnailData = await assetEntity.thumbnailDataWithSize(
+                ThumbnailSize(
+                    AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
             newAssetList.add(ImageAsset(assetEntity)
               ..originalFilePath = file.path
               ..thumnailBytes = thumbnailData);
@@ -273,39 +266,37 @@ class AppState extends ChangeNotifier {
         notifyListeners();
       }
     });
-    changeLanguage();
     Future.delayed(const Duration(milliseconds: 300), () async {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-          // 检查权限
-      final havePermission = await PermissionUtils.checkPhotosPermisson(
-          permisinUsingInfo: AppUtils.i18Translate(
-              'common.dialog.use_info_photo',
-              context: AppUtils.globalContext));
-      if (havePermission) {
-        PhotoManagerTool.allPhotoAssets = [];
-        final assetPaths =
-            await PhotoManager.getAssetPathList(type: RequestType.image);
-        // 获取所有图片资源对象
-        for (var album in assetPaths) {
-          final count = await album.assetCountAsync;
-          if (count > 0) {
-            final assetItems =
-                await album.getAssetListRange(start: 0, end: count);
-            PhotoManagerTool.allPhotoAssets.addAll(assetItems);
-            // id 映射
-            for (var asset in assetItems) {
-              if (!PhotoManagerTool.allPhotoAssetsIdMaps
-                  .containsKey(asset.id)) {
-                PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
+        // 检查权限
+        final havePermission = await PermissionUtils.checkPhotosPermisson(
+            permisinUsingInfo: AppUtils.i18Translate(
+                'common.dialog.use_info_photo',
+                context: AppUtils.globalContext));
+        if (havePermission) {
+          PhotoManagerTool.allPhotoAssets = [];
+          final assetPaths =
+              await PhotoManager.getAssetPathList(type: RequestType.image);
+          // 获取所有图片资源对象
+          for (var album in assetPaths) {
+            final count = await album.assetCountAsync;
+            if (count > 0) {
+              final assetItems =
+                  await album.getAssetListRange(start: 0, end: count);
+              PhotoManagerTool.allPhotoAssets.addAll(assetItems);
+              // id 映射
+              for (var asset in assetItems) {
+                if (!PhotoManagerTool.allPhotoAssetsIdMaps
+                    .containsKey(asset.id)) {
+                  PhotoManagerTool.allPhotoAssetsIdMaps[asset.id] = asset;
+                }
               }
             }
           }
+          // 所有图片加载完成 发送通知
+          globalStreamControler.add(AllPhotoLoadFinishEvent());
         }
-        // 所有图片加载完成 发送通知
-        globalStreamControler.add(AllPhotoLoadFinishEvent());
-      }
       });
-    
     });
   }
 

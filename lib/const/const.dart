@@ -3,7 +3,7 @@ import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 
 /// 图片大图 阈值
-const double maxImageMB = 1;
+const double maxImageMB = 5;
 
 /// 图片大小计算单位
 const int imgUnitOfAccount = 1000;
@@ -17,6 +17,7 @@ class ImageAsset {
   int length = 0;
   String? fileSize;
   Uint8List? thumnailBytes;
+  Uint8List? originBytes;
   String? originalFilePath;
   ImageAsset(this.assetEntity);
 }

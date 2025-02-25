@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/widget/image_preview_widget.dart';
 import 'package:flutter/material.dart';
@@ -40,7 +41,11 @@ class AppUtils {
     try {
       final unit = ['B', 'KB', 'MB', 'GB'];
       final tp = (log(size) / log(imgUnitOfAccount)).floor();
-      return '${(size / pow(imgUnitOfAccount, tp)).ceil().toStringAsFixed(toFixed)}${unit[tp.toInt()]}';
+      if (toFixed == 0) {
+        return '${(size / pow(imgUnitOfAccount, tp)).ceil().toStringAsFixed(toFixed)}${unit[tp.toInt()]}';
+      } else {
+        return '${(size / pow(imgUnitOfAccount, tp)).toStringAsFixed(toFixed)}${unit[tp.toInt()]}';
+      }
     } catch (e) {
       return '0KB';
     }
@@ -59,31 +64,29 @@ class AppUtils {
       barrierColor: Colors.black,
       useSafeArea: false,
       builder: (BuildContext context) {
-        return SafeArea(
-          bottom: false,
-          top: false,
-          child: Material(
-            color: Colors.black,
-            child: Stack(
-              children: [
-                ImagePreviewWidget(
-                  images: images,
-                  index: index,
+        return Scaffold(
+          backgroundColor: AppColor.bgColor,
+          appBar: AppBar(
+            centerTitle: true,
+            elevation: 0,
+            backgroundColor: AppColor.bgColor,
+            leading: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                Navigator.of(context).pop();
+              },
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                child: Image.asset(
+                  'assets/images/common/back.png',
                 ),
-                Positioned(
-                  right: 12,
-                  top: AppUtils.safeAreapadding.top + 12,
-                  child: IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
+          ),
+          body: ImagePreviewWidget(
+            images: images,
+            index: index,
           ),
         );
       },

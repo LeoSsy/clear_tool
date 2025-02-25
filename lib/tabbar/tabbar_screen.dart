@@ -50,7 +50,6 @@ class _TabbarScreenState extends State<TabbarScreen> {
   @override
   Widget build(BuildContext context) {
     AppUtils.globalContext = context;
-    Provider.of<AppState>(context).changeLanguage();
     return Stack(
       children: [
         Scaffold(
@@ -63,7 +62,7 @@ class _TabbarScreenState extends State<TabbarScreen> {
           // floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
           bottomNavigationBar: BottomAppBar(
             shape: const CircularNotchedRectangle(),
-            height: 55,
+            height: 60,
             child: Padding(
               padding: const EdgeInsets.only(top: 5),
               child: Theme(
@@ -75,9 +74,15 @@ class _TabbarScreenState extends State<TabbarScreen> {
                   elevation: 0,
                   backgroundColor: Colors.transparent,
                   currentIndex: _currentIndex,
-                  selectedFontSize: 10,
-                  unselectedFontSize: 10,
                   iconSize: 25,
+                  selectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                  unselectedLabelStyle: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
                   unselectedItemColor: Colors.black,
                   selectedItemColor: const Color.fromRGBO(5, 122, 229, 1),
                   onTap: (index) => _onTap(index),
@@ -89,8 +94,8 @@ class _TabbarScreenState extends State<TabbarScreen> {
           ),
         ),
         Positioned(
-          left: (MediaQuery.of(context).size.width / 2) - 71 / 2,
-          bottom: MediaQuery.of(context).padding.bottom + 71 * 0.2,
+          left: (MediaQuery.of(context).size.width / 2) - 90 / 2,
+          bottom: MediaQuery.of(context).padding.bottom + 90 * 0.2,
           child: _buildFloatingActionButton(),
         ),
       ],
@@ -146,8 +151,9 @@ class _TabbarScreenState extends State<TabbarScreen> {
       },
       child: Image.asset(
         'assets/images/tab/clear_icon.png',
-        width: 71,
-        height: 71,
+        fit: BoxFit.cover,
+        width: 90,
+        height: 90,
       ),
     );
   }

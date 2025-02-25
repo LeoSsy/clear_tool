@@ -1,6 +1,5 @@
 import 'dart:async';
-import 'dart:math';
-
+import 'dart:typed_data';
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
@@ -13,7 +12,9 @@ import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:clear_tool/utils/toast_utils.dart';
 import 'package:clear_tool/widget/empty_widget.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class ScreenShotPage extends StatefulWidget {
@@ -28,44 +29,12 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
   List<ImageAsset> screenshots = [];
   List<ImageAsset> selPhotos = [];
   bool isAllSel = false;
-  StreamSubscription? streamSubscription;
   bool isScrolling = false;
 
   @override
   void initState() {
     super.initState();
-    screenshots = [...PhotoManagerTool.screenShotImageEntity];
-    addListen();
-  }
-
-  Future removeListen() async {
-    await streamSubscription?.cancel();
-  }
-
-  void addListen() {
-    streamSubscription = globalStreamControler.stream.listen((event) {
-      if (event is ScreenPhotoEvent) {
-        if (mounted && !isScrolling) {
-          addPhotos();
-        }
-      } else if (event is RefreshEvent) {
-        setState(() {});
-      }
-    });
-  }
-
-  void addPhotos() {
-    setState(() {
-      for (var newAsset in PhotoManagerTool.screenShotImageEntity) {
-        final findCaches = screenshots
-            .where((oldAsset) =>
-                oldAsset.assetEntity.id == newAsset.assetEntity.id)
-            .toList();
-        if (findCaches.isEmpty) {
-          screenshots.add(newAsset);
-        }
-      }
-    });
+    screenshots = PhotoManagerTool.screenShotImageEntity;
   }
 
   allSelectedPhotos(bool isAllSel) {
@@ -88,7 +57,6 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
 
   @override
   void dispose() {
-    streamSubscription?.cancel();
     allSelectedPhotos(false);
     super.dispose();
   }
@@ -97,51 +65,60 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
   Widget build(BuildContext context) {
     final imgW = AppUtils.screenW / 4;
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        centerTitle: true,
-        leading: GestureDetector(
-          onTap: () {
-            Navigator.of(context).pop();
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-            child: Image.asset(
-              'assets/images/common/back.png',
+      appBar: PreferredSize(
+        preferredSize: const Size(0, 50),
+        child: SafeArea(
+          child: SizedBox(
+            height: 50,
+            child: Row(
+              children: [
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
+                    child: Image.asset(
+                      'assets/images/common/back.png',
+                    ),
+                  ),
+                ),
+                Text(
+                  screenshots.isNotEmpty
+                      ? '${AppUtils.i18Translate('home.screenshot', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
+                      : AppUtils.i18Translate('home.screenshot',
+                          context: context),
+                  style: const TextStyle(
+                    fontSize: 17,
+                    color: AppColor.textPrimary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const Spacer(),
+                Visibility(
+                  visible: screenshots.isNotEmpty,
+                  child: TextButton(
+                      onPressed: () {
+                        isAllSel = !isAllSel;
+                        allSelectedPhotos(isAllSel);
+                      },
+                      child: Text(
+                        isAllSel
+                            ? AppUtils.i18Translate('home.unSelectedAll',
+                                context: context)
+                            : AppUtils.i18Translate('home.selectedAll',
+                                context: context),
+                        style: TextStyle(
+                          fontSize: 14.autoSize,
+                          color: AppColor.mainColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )),
+                )
+              ],
             ),
           ),
         ),
-        title: Text(
-          screenshots.isNotEmpty
-              ? '${AppUtils.i18Translate('home.screenshot', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
-              : AppUtils.i18Translate('home.screenshot', context: context),
-          style: const TextStyle(
-              fontSize: 17,
-              color: AppColor.textPrimary,
-              fontWeight: FontWeight.bold),
-        ),
-        elevation: 0,
-        actions: [
-          Visibility(
-            visible: screenshots.isNotEmpty,
-            child: TextButton(
-                onPressed: () {
-                  isAllSel = !isAllSel;
-                  allSelectedPhotos(isAllSel);
-                },
-                child: Text(
-                  isAllSel
-                      ? AppUtils.i18Translate('home.unSelectedAll',
-                          context: context)
-                      : AppUtils.i18Translate('home.selectedAll',
-                          context: context),
-                  style: TextStyle(
-                    fontSize: 11.autoSize,
-                    color: AppColor.mainColor,
-                  ),
-                )),
-          )
-        ],
       ),
       body: Column(
         children: [
@@ -181,43 +158,53 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                               final assets = screenshots[index];
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
-                                onTap: () async {
-                                  removeListen();
-                                  // 截取前后二十张图片
-                                  // final id = assets.assetEntity.id;
-                                  // final start = max(index - 20, 0);
-                                  // final end =
-                                  //     min(index + 20, screenshots.length);
-                                  // final tempList =
-                                  //     screenshots.sublist(start, end);
-                                  // var preIndex = 0;
-                                  // for (var i = 0; i < tempList.length; i++) {
-                                  //   if (tempList[i].assetEntity.id == id) {
-                                  //     preIndex = i;
-                                  //     break;
-                                  //   }
-                                  // }
-                                  await AppUtils.showImagePreviewDialog(
+                                onTap: () {
+                                  AppUtils.showImagePreviewDialog(
                                     context,
                                     screenshots,
                                     index,
                                   );
-                                  addPhotos();
-                                  addListen();
                                 },
                                 child: Stack(
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
-                                      child: assets.thumnailBytes != null
-                                          ? Image.memory(
+                                      child: 
+                                      assets.thumnailBytes != null
+                                          ? ExtendedImage.memory(
                                               assets.thumnailBytes!,
-                                              width: imgW,
                                               fit: BoxFit.cover,
-                                            )
-                                          : Image.asset(
-                                              'assets/images/common/placeholder.png',
                                               width: imgW,
+                                              height: imgW,
+                                            )
+                                          : 
+                                          FutureBuilder(
+                                              future: _loadImage(assets,imgW.toInt()*5,imgW.toInt()*5),
+                                              builder: (context, snapshot) {
+                                                if (snapshot.connectionState ==
+                                                    ConnectionState.done) {
+                                                  return snapshot.data != null
+                                                      ? ExtendedImage.memory(
+                                                          assets.thumnailBytes!,
+                                                          fit: BoxFit.cover,
+                                                          width: imgW,
+                                                          height: imgW,
+                                                        )
+                                                      : Image.asset(
+                                                          'assets/images/common/placeholder.png',
+                                                          fit: BoxFit.cover,
+                                                          width: imgW,
+                                                          height: imgW,
+                                                        );
+                                                } else {
+                                                  return Image.asset(
+                                                    'assets/images/common/placeholder.png',
+                                                    fit: BoxFit.cover,
+                                                    width: imgW,
+                                                    height: imgW,
+                                                  );
+                                                }
+                                              },
                                             ),
                                     ),
                                     Positioned(
@@ -343,17 +330,18 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                 },
                 child: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(8),
                     color: AppColor.mainColor,
                   ),
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   alignment: Alignment.center,
                   child: Text(
                     '${AppUtils.i18Translate('home.delete', context: context)} ${selPhotos.length} ${AppUtils.i18Translate('home.aImage', context: context)}',
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: 16,
                       color: Colors.white,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
@@ -363,6 +351,16 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
         ],
       ),
     );
+  }
+
+  Future<Uint8List?> _loadImage(ImageAsset asset,int imgW,int imgH) async {
+    final thumbnailData = await asset.assetEntity.thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
+    if (thumbnailData != null) {
+      asset.thumnailBytes = thumbnailData;
+      return thumbnailData;
+    } else {
+      return null;
+    }
   }
 
   Future<String?> _loadImageSize(ImageAsset asset) async {

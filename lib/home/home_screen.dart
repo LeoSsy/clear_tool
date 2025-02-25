@@ -97,11 +97,10 @@ class HomeScreen extends HookWidget {
                       ),
                       padding: EdgeInsets.symmetric(
                         horizontal: 8.autoSize!,
-                        vertical: 2.autoSize!,
+                        vertical: 4.autoSize!,
                       ),
                       width: double.infinity,
                       margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
-                      height: 27.autoSize,
                       child: Row(
                         children: [
                           Column(
@@ -134,7 +133,7 @@ class HomeScreen extends HookWidget {
                         ],
                       ),
                     ),
-                    SizedBox(height: 9.autoSize),
+                    SizedBox(height: 12.autoSize),
                   ],
                 ),
               ),
@@ -184,11 +183,10 @@ class HomeScreen extends HookWidget {
                       ),
                       padding: EdgeInsets.symmetric(
                         horizontal: 8.autoSize!,
-                        vertical: 2.autoSize!,
+                        vertical: 4.autoSize!,
                       ),
                       width: double.infinity,
                       margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
-                      height: 27.autoSize,
                       child: Row(
                         children: [
                           Column(
@@ -219,7 +217,7 @@ class HomeScreen extends HookWidget {
                         ],
                       ),
                     ),
-                    SizedBox(height: 9.autoSize),
+                    SizedBox(height: 12.autoSize),
                   ],
                 ),
               ),
@@ -270,11 +268,10 @@ class HomeScreen extends HookWidget {
                       ),
                       padding: EdgeInsets.symmetric(
                         horizontal: 8.autoSize!,
-                        vertical: 2.autoSize!,
+                        vertical: 4.autoSize!,
                       ),
                       width: double.infinity,
                       margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
-                      height: 27.autoSize,
                       child: Row(
                         children: [
                           Column(
@@ -307,7 +304,7 @@ class HomeScreen extends HookWidget {
                         ],
                       ),
                     ),
-                    SizedBox(height: 9.autoSize),
+                    SizedBox(height: 12.autoSize),
                   ],
                 ),
               ),
@@ -409,7 +406,7 @@ class HomeScreen extends HookWidget {
                       Text(
                         AppUtils.i18Translate('home.useSpace'),
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: 20,
                           color: AppColor.textPrimary,
                         ),
                       ),
@@ -420,7 +417,7 @@ class HomeScreen extends HookWidget {
                             child: Text(
                               appState.circleProgress.toStringAsFixed(0),
                               style: const TextStyle(
-                                fontSize: 46,
+                                fontSize: 56,
                                 color: AppColor.textPrimary,
                                 fontWeight: FontWeight.bold,
                                 height: 1,
@@ -433,7 +430,7 @@ class HomeScreen extends HookWidget {
                               child: Text(
                                 '%',
                                 style: TextStyle(
-                                  fontSize: 21,
+                                  fontSize: 26,
                                   color: AppColor.textPrimary,
                                   fontWeight: FontWeight.bold,
                                 ),
