@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
@@ -159,27 +160,42 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
+                                  // 截取前后100张图片
+                                  final id = assets.assetEntity.id;
+                                  final start = max(index - 100, 0);
+                                  final end =
+                                      min(index + 100, screenshots.length);
+                                  final tempList =
+                                      screenshots.sublist(start, end);
+                                  var preIndex = 0;
+                                  for (var i = 0; i < tempList.length; i++) {
+                                    if (tempList[i].assetEntity.id == id) {
+                                      preIndex = i;
+                                      break;
+                                    }
+                                  }
                                   AppUtils.showImagePreviewDialog(
                                     context,
-                                    screenshots,
-                                    index,
+                                    tempList,
+                                    preIndex,
                                   );
                                 },
                                 child: Stack(
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
-                                      child: 
-                                      assets.thumnailBytes != null
+                                      child: assets.thumnailBytes != null
                                           ? ExtendedImage.memory(
                                               assets.thumnailBytes!,
                                               fit: BoxFit.cover,
                                               width: imgW,
                                               height: imgW,
                                             )
-                                          : 
-                                          FutureBuilder(
-                                              future: _loadImage(assets,imgW.toInt()*5,imgW.toInt()*5),
+                                          : FutureBuilder(
+                                              future: _loadImage(
+                                                  assets,
+                                                  imgW.toInt() * 5,
+                                                  imgW.toInt() * 5),
                                               builder: (context, snapshot) {
                                                 if (snapshot.connectionState ==
                                                     ConnectionState.done) {
@@ -353,8 +369,9 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
     );
   }
 
-  Future<Uint8List?> _loadImage(ImageAsset asset,int imgW,int imgH) async {
-    final thumbnailData = await asset.assetEntity.thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
+  Future<Uint8List?> _loadImage(ImageAsset asset, int imgW, int imgH) async {
+    final thumbnailData = await asset.assetEntity
+        .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
     if (thumbnailData != null) {
       asset.thumnailBytes = thumbnailData;
       return thumbnailData;

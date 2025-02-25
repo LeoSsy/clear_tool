@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'dart:typed_data';
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
@@ -178,10 +179,23 @@ class _BigImagePageState extends State<BigImagePage> {
                               final assets = bigPhotos[index];
                               return GestureDetector(
                                 onTap: () async {
+                                  // 截取前后100张图片
+                                  final id = assets.assetEntity.id;
+                                  final start = max(index - 100, 0);
+                                  final end = min(index + 100, bigPhotos.length);
+                                  final tempList =
+                                      bigPhotos.sublist(start, end);
+                                  var preIndex = 0;
+                                  for (var i = 0; i < tempList.length; i++) {
+                                    if (tempList[i].assetEntity.id == id) {
+                                      preIndex = i;
+                                      break;
+                                    }
+                                  }
                                   AppUtils.showImagePreviewDialog(
                                     context,
-                                    bigPhotos,
-                                    index,
+                                    tempList,
+                                    preIndex,
                                   );
                                 },
                                 child: Stack(

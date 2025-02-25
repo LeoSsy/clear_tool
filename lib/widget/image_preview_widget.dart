@@ -115,78 +115,34 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
               },
               itemBuilder: (context, index) {
                 final asset = widget.images[index];
-                return asset.originBytes != null
-                    ? ExtendedImage.memory(
-                        asset.originBytes!,
-                        mode: ExtendedImageMode.gesture,
-                        initGestureConfigHandler: (state) {
-                          return GestureConfig(
-                            minScale: 0.9,
-                            animationMinScale: 0.7,
-                            maxScale: 3.0,
-                            animationMaxScale: 3.5,
-                            speed: 1.0,
-                            inertialSpeed: 100.0,
-                            initialScale: 1.0,
-                            inPageView: false,
-                            initialAlignment: InitialAlignment.center,
-                          );
-                        },
-                        loadStateChanged: (state) {
-                          if (state.extendedImageLoadState ==
-                              LoadState.loading) {
-                            return const Center(
-                              child: CupertinoActivityIndicator(
-                                radius: 16,
-                                color: AppColor.mainColor,
-                              ),
-                            );
-                          }
-                          return null;
-                        },
-                      )
-                    : FutureBuilder(
-                        future: _loadOriginBytes(widget.images[index]),
-                        builder: (context, snapShot) {
-                          if (snapShot.data != null) {
-                            return ExtendedImage.memory(
-                              snapShot.data!,
-                              mode: ExtendedImageMode.gesture,
-                              initGestureConfigHandler: (state) {
-                                return GestureConfig(
-                                  minScale: 0.9,
-                                  animationMinScale: 0.7,
-                                  maxScale: 3.0,
-                                  animationMaxScale: 3.5,
-                                  speed: 1.0,
-                                  inertialSpeed: 100.0,
-                                  initialScale: 1.0,
-                                  inPageView: false,
-                                  initialAlignment: InitialAlignment.center,
-                                );
-                              },
-                              loadStateChanged: (state) {
-                                if (state.extendedImageLoadState ==
-                                    LoadState.loading) {
-                                  return const Center(
-                                    child: CupertinoActivityIndicator(
-                                      radius: 16,
-                                      color: AppColor.mainColor,
-                                    ),
-                                  );
-                                }
-                                return null;
-                              },
-                            );
-                          } else {
-                            return const Center(
-                              child: CupertinoActivityIndicator(
-                                radius: 16,
-                                color: AppColor.mainColor,
-                              ),
-                            );
-                          }
-                        });
+                return ExtendedImage.file(
+                  File(asset.originalFilePath!),
+                  mode: ExtendedImageMode.gesture,
+                  initGestureConfigHandler: (state) {
+                    return GestureConfig(
+                      minScale: 0.9,
+                      animationMinScale: 0.7,
+                      maxScale: 3.0,
+                      animationMaxScale: 3.5,
+                      speed: 1.0,
+                      inertialSpeed: 100.0,
+                      initialScale: 1.0,
+                      inPageView: false,
+                      initialAlignment: InitialAlignment.center,
+                    );
+                  },
+                  loadStateChanged: (state) {
+                    if (state.extendedImageLoadState == LoadState.loading) {
+                      return const Center(
+                        child: CupertinoActivityIndicator(
+                          radius: 16,
+                          color: AppColor.mainColor,
+                        ),
+                      );
+                    }
+                    return null;
+                  },
+                );
               },
             ),
           ),
@@ -247,7 +203,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Future<Uint8List?> _loadOriginBytes(ImageAsset asset) async {
-    final thumbnailData = await asset.assetEntity.thumbnailDataWithSize(ThumbnailSize(AppUtils.screenW.toInt(), AppUtils.screenH.toInt()));
+    final thumbnailData = await asset.assetEntity.thumbnailDataWithSize(
+        ThumbnailSize(AppUtils.screenW.toInt(), AppUtils.screenH.toInt()));
     if (thumbnailData != null) {
       asset.originBytes = thumbnailData;
       return thumbnailData;
