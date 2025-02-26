@@ -238,13 +238,12 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                                             }
                                           });
                                         },
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(8),
-                                          child: Image.asset(
-                                            assets.selected
-                                                ? 'assets/images/common/selected_sel.png'
-                                                : 'assets/images/common/selected_normal.png',
-                                          ),
+                                        child: Image.asset(
+                                          assets.selected
+                                              ? 'assets/images/common/selected_sel.png'
+                                              : 'assets/images/common/selected_normal.png',
+                                              width: 30,
+                                              height: 30,
                                         ),
                                       ),
                                     ),

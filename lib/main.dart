@@ -15,7 +15,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:intl/intl.dart';
 import 'package:mmkv/mmkv.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:image/image.dart' as img;
@@ -69,7 +68,7 @@ void spawnBigPhotosIsolate(SendPort port) async {
         }
       }
       final index = assetItems.indexOf(asset);
-      double imageProcessProgress = (index / assetItems.length) * 33.33;
+      double imageProcessProgress = ((index +1) / assetItems.length) * 33.33;
       port.send({
         "event": "TaskProgressEvent",
         "type": 'bigPhoto',
@@ -131,7 +130,7 @@ void spawnScreenshotIsolate(SendPort port) async {
         'size': totalSize,
       });
     }
-    double imageProcessProgress = (i / photoAssets.length) * 33.33;
+    double imageProcessProgress = ((i+1) / photoAssets.length) * 33.33;
     port.send({
       "event": "TaskProgressEvent",
       "type": 'screenshotPhoto',
@@ -160,7 +159,7 @@ _imageHashCompare(SendPort port) {
       if (currentHash == nextHash) continue;
       final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
       // print('distance.....$distance');
-      if (distance > 0.72) {
+      if (distance > 0.80) {
         useHashId.add(nextHash);
         // print('找到相似图片.....');
         findSamePhotos = true;
@@ -213,7 +212,7 @@ void spawnSamePhotosIsolate(SendPort port) async {
           if (hashs.length % 50 == 0) {
             _imageHashCompare(port);
             double imageProcessProgress =
-                i / assetItems.length * assetCompareProgress * 33.33;
+                (i + 1) / assetItems.length * assetCompareProgress * 33.33;
             // print('same++++++$imageProcessProgress');
             port.send({
               "event": "TaskProgressEvent",
@@ -241,7 +240,10 @@ void spawnSamePhotosIsolate(SendPort port) async {
 }
 
 void main() async {
+  // 设置图片缓存大小
   WidgetsFlutterBinding.ensureInitialized();
+  PaintingBinding.instance.imageCache.maximumSize = 20000;
+  PaintingBinding.instance.imageCache.maximumSizeBytes = 1024 << 20; // 900 MiB;
   final FlutterI18nDelegate flutterI18nDelegate = FlutterI18nDelegate(
     translationLoader: NamespaceFileTranslationLoader(
       namespaces: ["common", "home"],

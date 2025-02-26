@@ -263,7 +263,8 @@ class _SameImagePageState extends State<SameImagePage> {
                                         cacheHeight: imgW.toInt(),
                                       )
                                     : FutureBuilder(
-                                        future: _loadImage(assets,imgW.toInt()*5,imgW.toInt()*5),
+                                        future: _loadImage(assets,
+                                            imgW.toInt() * 5, imgW.toInt() * 5),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState ==
                                               ConnectionState.done) {
@@ -336,6 +337,8 @@ class _SameImagePageState extends State<SameImagePage> {
                                       assets.selected
                                           ? 'assets/images/common/selected_sel.png'
                                           : 'assets/images/common/selected_normal.png',
+                                      width: 30,
+                                      height: 30,
                                     ),
                                   ),
                                 ),
@@ -482,8 +485,9 @@ class _SameImagePageState extends State<SameImagePage> {
     );
   }
 
-  Future<Uint8List?> _loadImage(ImageAsset asset,int imgW,int imgH) async {
-    final thumbnailData = await asset.assetEntity.thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
+  Future<Uint8List?> _loadImage(ImageAsset asset, int imgW, int imgH) async {
+    final thumbnailData = await asset.assetEntity
+        .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
     if (thumbnailData != null) {
       asset.thumnailBytes = thumbnailData;
       return thumbnailData;

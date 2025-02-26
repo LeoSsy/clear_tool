@@ -262,6 +262,8 @@ class _BigImagePageState extends State<BigImagePage> {
                                             assets.selected
                                                 ? 'assets/images/common/selected_sel.png'
                                                 : 'assets/images/common/selected_normal.png',
+                                            width: 30,
+                                            height: 30,
                                           ),
                                         ),
                                       ),
