@@ -325,8 +325,8 @@ class AppState extends ChangeNotifier {
     }
     final fz = await SystemDeviceInfo.freeSize();
     if (fz != null) {
-      useSize = AppUtils.fileSizeFormat(tz! - fz,toFixed: 0);
-      final value = ((tz - fz) / tz) * 100;
+      useSize = AppUtils.fileSizeFormat( fz);
+      final value = ((fz) / tz!) * 100;
       if (value > 90) {
         color = const Color(0xffEC5C0C);
         progressBgImage = 'assets/images/home/red_progress_bg.png';
