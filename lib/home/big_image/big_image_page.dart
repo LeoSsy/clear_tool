@@ -89,18 +89,19 @@ class _BigImagePageState extends State<BigImagePage> {
                     ),
                   ),
                 ),
-                Text(
-                  bigPhotos.isNotEmpty
-                      ? '${AppUtils.i18Translate('home.oversizedImage', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
-                      : AppUtils.i18Translate('home.oversizedImage',
-                          context: context),
-                  style: const TextStyle(
-                    fontSize: 17,
-                    color: AppColor.textPrimary,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    bigPhotos.isNotEmpty
+                        ? '${AppUtils.i18Translate('home.oversizedImage', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
+                        : AppUtils.i18Translate('home.oversizedImage',
+                            context: context),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      color: AppColor.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 Visibility(
                   visible: bigPhotos.isNotEmpty,
                   child: TextButton(
@@ -179,23 +180,10 @@ class _BigImagePageState extends State<BigImagePage> {
                               final assets = bigPhotos[index];
                               return GestureDetector(
                                 onTap: () async {
-                                  // 截取前后100张图片
-                                  final id = assets.assetEntity.id;
-                                  final start = max(index - 100, 0);
-                                  final end = min(index + 100, bigPhotos.length);
-                                  final tempList =
-                                      bigPhotos.sublist(start, end);
-                                  var preIndex = 0;
-                                  for (var i = 0; i < tempList.length; i++) {
-                                    if (tempList[i].assetEntity.id == id) {
-                                      preIndex = i;
-                                      break;
-                                    }
-                                  }
                                   AppUtils.showImagePreviewDialog(
                                     context,
-                                    tempList,
-                                    preIndex,
+                                    bigPhotos,
+                                    index,
                                   );
                                 },
                                 child: Stack(
@@ -209,37 +197,48 @@ class _BigImagePageState extends State<BigImagePage> {
                                               width: imgW,
                                               height: imgW,
                                             )
-                                          : FutureBuilder(
-                                              future: _loadImage(
-                                                  assets,
-                                                  imgW.toInt() * 5,
-                                                  imgW.toInt() * 5),
-                                              builder: (context, snapshot) {
-                                                if (snapshot.connectionState ==
-                                                    ConnectionState.done) {
-                                                  return snapshot.data != null
-                                                      ? ExtendedImage.memory(
-                                                          assets.thumnailBytes!,
-                                                          fit: BoxFit.cover,
-                                                          width: imgW,
-                                                          height: imgW,
-                                                        )
-                                                      : Image.asset(
-                                                          'assets/images/common/placeholder.png',
-                                                          fit: BoxFit.cover,
-                                                          width: imgW,
-                                                          height: imgW,
-                                                        );
-                                                } else {
-                                                  return Image.asset(
-                                                    'assets/images/common/placeholder.png',
-                                                    fit: BoxFit.cover,
-                                                    width: imgW,
-                                                    height: imgW,
-                                                  );
-                                                }
-                                              },
-                                            ),
+                                          : isScrolling
+                                              ? Image.asset(
+                                                  'assets/images/common/placeholder.png',
+                                                  fit: BoxFit.cover,
+                                                  width: imgW,
+                                                  height: imgW,
+                                                )
+                                              : FutureBuilder(
+                                                  future: _loadImage(
+                                                      assets,
+                                                      imgW.toInt() * 3,
+                                                      imgW.toInt() * 3),
+                                                  builder: (context, snapshot) {
+                                                    if (snapshot
+                                                            .connectionState ==
+                                                        ConnectionState.done) {
+                                                      return snapshot.data !=
+                                                              null
+                                                          ? ExtendedImage
+                                                              .memory(
+                                                              assets
+                                                                  .thumnailBytes!,
+                                                              fit: BoxFit.cover,
+                                                              width: imgW,
+                                                              height: imgW,
+                                                            )
+                                                          : Image.asset(
+                                                              'assets/images/common/placeholder.png',
+                                                              fit: BoxFit.cover,
+                                                              width: imgW,
+                                                              height: imgW,
+                                                            );
+                                                    } else {
+                                                      return Image.asset(
+                                                        'assets/images/common/placeholder.png',
+                                                        fit: BoxFit.cover,
+                                                        width: imgW,
+                                                        height: imgW,
+                                                      );
+                                                    }
+                                                  },
+                                                ),
                                     ),
                                     Positioned(
                                       right: 0,
@@ -280,30 +279,14 @@ class _BigImagePageState extends State<BigImagePage> {
                                         ),
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 3, vertical: 2),
-                                        child: assets.length == 0
-                                            ? FutureBuilder(
-                                                future: _loadImageSize(assets),
-                                                builder: (context, snapshot) {
-                                                  return Text(
-                                                    snapshot.connectionState ==
-                                                            ConnectionState.done
-                                                        ? '${snapshot.data}'
-                                                        : '0KB',
-                                                    style: const TextStyle(
-                                                      fontSize: 9,
-                                                      color: Colors.white,
-                                                    ),
-                                                  );
-                                                },
-                                              )
-                                            : Text(
-                                                AppUtils.fileSizeFormat(
-                                                    assets.length),
-                                                style: const TextStyle(
-                                                  fontSize: 9,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
+                                        child: Text(
+                                          AppUtils.fileSizeFormat(
+                                              assets.length),
+                                          style: const TextStyle(
+                                            fontSize: 9,
+                                            color: Colors.white,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -444,18 +427,6 @@ class _BigImagePageState extends State<BigImagePage> {
       return thumbnailData;
     } else {
       return null;
-    }
-  }
-
-  Future<String?> _loadImageSize(ImageAsset asset) async {
-    final orignalFile = await asset.assetEntity.originFile;
-    if (orignalFile != null) {
-      final length = await orignalFile.length();
-      asset.length = length;
-      asset.originalFilePath = orignalFile.path;
-      return AppUtils.fileSizeFormat(length);
-    } else {
-      return '0KB';
     }
   }
 }

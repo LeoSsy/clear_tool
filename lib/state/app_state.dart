@@ -81,6 +81,7 @@ class AppState extends ChangeNotifier {
         for (var id in event.ids) {
           for (var group in sameGroupPhotos) {
             group.assets.removeWhere((el) => el.assetEntity.id == id);
+            samePhotos?.removeWhere((element) => element.assetEntity.id ==id);
           }
         }
         samePhotoSize = max(samePhotoSize -= event.deleteTotalSize, 0);
@@ -104,12 +105,12 @@ class AppState extends ChangeNotifier {
               final file = await assetEntity.originFile;
               if (file != null) {
                 final length = await file.length();
-                final thumbnailData = await assetEntity.thumbnailDataWithSize(
-                    ThumbnailSize(
-                        AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
+                // final thumbnailData = await assetEntity.thumbnailDataWithSize(
+                //     ThumbnailSize(
+                //         AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
                 group.assets.add(ImageAsset(assetEntity)
                   ..originalFilePath = file.path
-                  ..thumnailBytes = thumbnailData
+                  // ..thumnailBytes = thumbnailData
                   ..length = length);
                 newAssetList.add(group);
               }
@@ -155,12 +156,15 @@ class AppState extends ChangeNotifier {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
           final file = await assetEntity.originFile;
           if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailDataWithSize(
-                ThumbnailSize(
-                    AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
-            newAssetList.add(ImageAsset(assetEntity)
-              ..originalFilePath = file.path
-              ..thumnailBytes = thumbnailData);
+            // final thumbnailData = await assetEntity.thumbnailDataWithSize(
+            //     ThumbnailSize(
+            //         AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
+            newAssetList.add(
+              ImageAsset(assetEntity)
+                ..originalFilePath = file.path
+                // ..thumnailBytes = thumbnailData
+                ..length = await file.length(),
+            );
           }
         } else {
           PhotoManagerTool.allPhotoAssetsIdMaps[event.id!] = PhotoManagerTool
@@ -171,12 +175,14 @@ class AppState extends ChangeNotifier {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
           final file = await assetEntity.originFile;
           if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailDataWithSize(
-                ThumbnailSize(
-                    AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
+            // final thumbnailData = await assetEntity.thumbnailDataWithSize(
+            //     ThumbnailSize(
+            //         AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
             newAssetList.add(ImageAsset(assetEntity)
-              ..originalFilePath = file.path
-              ..thumnailBytes = thumbnailData);
+                  ..originalFilePath = file.path
+                  ..length = await file.length()
+                // ..thumnailBytes = thumbnailData
+                );
           }
         }
         screenPhotos?.addAll(newAssetList);
@@ -203,12 +209,14 @@ class AppState extends ChangeNotifier {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
           final file = await assetEntity.originFile;
           if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailDataWithSize(
-                ThumbnailSize(
-                    AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
+            // final thumbnailData = await assetEntity.thumbnailDataWithSize(
+            //     ThumbnailSize(
+            //         AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
             newAssetList.add(ImageAsset(assetEntity)
-              ..originalFilePath = file.path
-              ..thumnailBytes = thumbnailData);
+                  ..originalFilePath = file.path
+                  ..length = await file.length()
+                // ..thumnailBytes = thumbnailData
+                );
           }
         } else {
           PhotoManagerTool.allPhotoAssetsIdMaps[event.id!] = PhotoManagerTool
@@ -219,12 +227,14 @@ class AppState extends ChangeNotifier {
           final assetEntity = PhotoManagerTool.allPhotoAssetsIdMaps[event.id]!;
           final file = await assetEntity.originFile;
           if (file != null) {
-            final thumbnailData = await assetEntity.thumbnailDataWithSize(
-                ThumbnailSize(
-                    AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
+            // final thumbnailData = await assetEntity.thumbnailDataWithSize(
+            //     ThumbnailSize(
+            //         AppUtils.screenW.toInt(), AppUtils.screenW.toInt()));
             newAssetList.add(ImageAsset(assetEntity)
-              ..originalFilePath = file.path
-              ..thumnailBytes = thumbnailData);
+                  ..originalFilePath = file.path
+                  ..length = await file.length()
+                // ..thumnailBytes = thumbnailData
+                );
           }
         }
         int sumSize = 0;

@@ -189,26 +189,27 @@ class HomeScreen extends HookWidget {
                       margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
                       child: Row(
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${PhotoManagerTool.bigImageEntity.length} ${AppUtils.i18Translate('home.sheet', context: context)}',
-                                style: TextStyle(
-                                  fontSize: 10.autoSize!,
-                                  color: const Color(0xff1C6EAA),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${PhotoManagerTool.bigImageEntity.length} ${AppUtils.i18Translate('home.sheet', context: context)}',
+                                  style: TextStyle(
+                                    fontSize: 10.autoSize!,
+                                    color: const Color(0xff1C6EAA),
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                appState.bigPhotoSize > 0 ? AppUtils.fileSizeFormat(appState.bigPhotoSize) : '0KB',
-                                style: TextStyle(
-                                  fontSize: 10.autoSize!,
-                                  color: const Color(0xff1C6EAA),
+                                Text(
+                                  appState.bigPhotoSize > 0 ? AppUtils.fileSizeFormat(appState.bigPhotoSize) : '0KB',
+                                  style: TextStyle(
+                                    fontSize: 10.autoSize!,
+                                    color: const Color(0xff1C6EAA),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const Spacer(),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
                             size: 8.autoSize,

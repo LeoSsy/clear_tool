@@ -1,4 +1,7 @@
+import 'dart:typed_data';
+
 import 'package:clear_tool/const/colors.dart';
+import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/extension/number_extension.dart';
 import 'package:clear_tool/home/big_image/big_image_page.dart';
 import 'package:clear_tool/home/same_image/same_image_page.dart';
@@ -6,9 +9,11 @@ import 'package:clear_tool/home/screen_shot/screen_shot_page.dart';
 import 'package:clear_tool/photo_manager/photo_manager_tool.dart';
 import 'package:clear_tool/state/app_state.dart';
 import 'package:clear_tool/utils/app_utils.dart';
+import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:photo_manager/photo_manager.dart';
 import 'package:provider/provider.dart';
 
 class ClearPage extends HookWidget {
@@ -30,8 +35,8 @@ class ClearPage extends HookWidget {
                   behavior: HitTestBehavior.opaque,
                   onTap: () => Navigator.of(context).pop(),
                   child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 12),
                     child: Image.asset(
                       'assets/images/common/back.png',
                     ),
@@ -199,17 +204,57 @@ class ClearPage extends HookWidget {
                                                           right: 5),
                                                   child: asset.thumnailBytes !=
                                                           null
-                                                      ? Image.memory(
+                                                      ? ExtendedImage.memory(
                                                           asset.thumnailBytes!,
                                                           fit: BoxFit.cover,
-                                                          width: 60.autoSize,
-                                                          height: 60.autoSize,
+                                                          width: 60,
+                                                          height: 60,
                                                         )
-                                                      : Image.asset(
-                                                          'assets/images/common/placeholder.png',
-                                                          fit: BoxFit.cover,
-                                                          width: 60.autoSize,
-                                                          height: 60.autoSize,
+                                                      : FutureBuilder(
+                                                          future: _loadImage(
+                                                              asset, 180, 180),
+                                                          builder: (context,
+                                                              snapshot) {
+                                                            if (snapshot
+                                                                    .connectionState ==
+                                                                ConnectionState
+                                                                    .done) {
+                                                              return snapshot
+                                                                          .data !=
+                                                                      null
+                                                                  ? ExtendedImage
+                                                                      .memory(
+                                                                      snapshot
+                                                                          .data!,
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                      width: 60
+                                                                          .autoSize,
+                                                                      height: 60
+                                                                          .autoSize,
+                                                                    )
+                                                                  : Image.asset(
+                                                                      'assets/images/common/placeholder.png',
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                      width: 60
+                                                                          .autoSize,
+                                                                      height: 60
+                                                                          .autoSize,
+                                                                    );
+                                                            } else {
+                                                              return Image
+                                                                  .asset(
+                                                                'assets/images/common/placeholder.png',
+                                                                fit: BoxFit
+                                                                    .cover,
+                                                                width:
+                                                                    60.autoSize,
+                                                                height:
+                                                                    60.autoSize,
+                                                              );
+                                                            }
+                                                          },
                                                         ),
                                                 );
                                               }),
@@ -327,17 +372,57 @@ class ClearPage extends HookWidget {
                                                           right: 5),
                                                   child: asset.thumnailBytes !=
                                                           null
-                                                      ? Image.memory(
+                                                      ? ExtendedImage.memory(
                                                           asset.thumnailBytes!,
                                                           fit: BoxFit.cover,
                                                           width: 60.autoSize,
                                                           height: 60.autoSize,
                                                         )
-                                                      : Image.asset(
-                                                          'assets/images/common/placeholder.png',
-                                                          fit: BoxFit.cover,
-                                                          width: 60.autoSize,
-                                                          height: 60.autoSize,
+                                                      : FutureBuilder(
+                                                          future: _loadImage(
+                                                              asset, 180, 180),
+                                                          builder: (context,
+                                                              snapshot) {
+                                                            if (snapshot
+                                                                    .connectionState ==
+                                                                ConnectionState
+                                                                    .done) {
+                                                              return snapshot
+                                                                          .data !=
+                                                                      null
+                                                                  ? ExtendedImage
+                                                                      .memory(
+                                                                      snapshot
+                                                                          .data!,
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                      width: 60
+                                                                          .autoSize,
+                                                                      height: 60
+                                                                          .autoSize,
+                                                                    )
+                                                                  : Image.asset(
+                                                                      'assets/images/common/placeholder.png',
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                      width: 60
+                                                                          .autoSize,
+                                                                      height: 60
+                                                                          .autoSize,
+                                                                    );
+                                                            } else {
+                                                              return Image
+                                                                  .asset(
+                                                                'assets/images/common/placeholder.png',
+                                                                fit: BoxFit
+                                                                    .cover,
+                                                                width:
+                                                                    60.autoSize,
+                                                                height:
+                                                                    60.autoSize,
+                                                              );
+                                                            }
+                                                          },
                                                         ),
                                                 );
                                               }),
@@ -456,17 +541,57 @@ class ClearPage extends HookWidget {
                                                           right: 5),
                                                   child: asset.thumnailBytes !=
                                                           null
-                                                      ? Image.memory(
+                                                      ? ExtendedImage.memory(
                                                           asset.thumnailBytes!,
                                                           fit: BoxFit.cover,
                                                           width: 60.autoSize,
                                                           height: 60.autoSize,
                                                         )
-                                                      : Image.asset(
-                                                          'assets/images/common/placeholder.png',
-                                                          fit: BoxFit.cover,
-                                                          width: 60.autoSize,
-                                                          height: 60.autoSize,
+                                                      : FutureBuilder(
+                                                          future: _loadImage(
+                                                              asset, 180, 180),
+                                                          builder: (context,
+                                                              snapshot) {
+                                                            if (snapshot
+                                                                    .connectionState ==
+                                                                ConnectionState
+                                                                    .done) {
+                                                              return snapshot
+                                                                          .data !=
+                                                                      null
+                                                                  ? ExtendedImage
+                                                                      .memory(
+                                                                      snapshot
+                                                                          .data!,
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                      width: 60
+                                                                          .autoSize,
+                                                                      height: 60
+                                                                          .autoSize,
+                                                                    )
+                                                                  : Image.asset(
+                                                                      'assets/images/common/placeholder.png',
+                                                                      fit: BoxFit
+                                                                          .cover,
+                                                                      width: 60
+                                                                          .autoSize,
+                                                                      height: 60
+                                                                          .autoSize,
+                                                                    );
+                                                            } else {
+                                                              return Image
+                                                                  .asset(
+                                                                'assets/images/common/placeholder.png',
+                                                                fit: BoxFit
+                                                                    .cover,
+                                                                width:
+                                                                    60.autoSize,
+                                                                height:
+                                                                    60.autoSize,
+                                                              );
+                                                            }
+                                                          },
                                                         ),
                                                 );
                                               }),
@@ -502,5 +627,16 @@ class ClearPage extends HookWidget {
         ],
       ),
     );
+  }
+
+  Future<Uint8List?> _loadImage(ImageAsset asset, int imgW, int imgH) async {
+    final thumbnailData = await asset.assetEntity
+        .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
+    if (thumbnailData != null) {
+      asset.thumnailBytes = thumbnailData;
+      return thumbnailData;
+    } else {
+      return null;
+    }
   }
 }

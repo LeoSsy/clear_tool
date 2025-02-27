@@ -84,18 +84,19 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                     ),
                   ),
                 ),
-                Text(
-                  screenshots.isNotEmpty
-                      ? '${AppUtils.i18Translate('home.screenshot', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
-                      : AppUtils.i18Translate('home.screenshot',
-                          context: context),
-                  style: const TextStyle(
-                    fontSize: 17,
-                    color: AppColor.textPrimary,
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    screenshots.isNotEmpty
+                        ? '${AppUtils.i18Translate('home.screenshot', context: context)} (${AppUtils.i18Translate('home.selected', context: context)}${selPhotos.length})'
+                        : AppUtils.i18Translate('home.screenshot',
+                            context: context),
+                    style: const TextStyle(
+                      fontSize: 17,
+                      color: AppColor.textPrimary,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
-                const Spacer(),
                 Visibility(
                   visible: screenshots.isNotEmpty,
                   child: TextButton(
@@ -161,23 +162,23 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   // 截取前后100张图片
-                                  final id = assets.assetEntity.id;
-                                  final start = max(index - 100, 0);
-                                  final end =
-                                      min(index + 100, screenshots.length);
-                                  final tempList =
-                                      screenshots.sublist(start, end);
-                                  var preIndex = 0;
-                                  for (var i = 0; i < tempList.length; i++) {
-                                    if (tempList[i].assetEntity.id == id) {
-                                      preIndex = i;
-                                      break;
-                                    }
-                                  }
+                                  // final id = assets.assetEntity.id;
+                                  // final start = max(index - 100, 0);
+                                  // final end =
+                                  //     min(index + 100, screenshots.length);
+                                  // final tempList =
+                                  //     screenshots.sublist(start, end);
+                                  // var preIndex = 0;
+                                  // for (var i = 0; i < tempList.length; i++) {
+                                  //   if (tempList[i].assetEntity.id == id) {
+                                  //     preIndex = i;
+                                  //     break;
+                                  //   }
+                                  // }
                                   AppUtils.showImagePreviewDialog(
                                     context,
-                                    tempList,
-                                    preIndex,
+                                    screenshots,
+                                    index,
                                   );
                                 },
                                 child: Stack(
