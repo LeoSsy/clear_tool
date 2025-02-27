@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -30,7 +31,7 @@ FlutterIsolate? screenshotPhotoIsolate;
 void spawnBigPhotosIsolate(SendPort port) async {
   PhotoManagerTool.allPhotoAssets = [];
   final assetPaths =
-      await PhotoManager.getAssetPathList(type: RequestType.image);
+  await PhotoManager.getAssetPathList(type: RequestType.image);
   // 获取所有图片资源对象
   int bigPhotoSize = 0;
   for (var album in assetPaths) {
@@ -90,7 +91,7 @@ void spawnBigPhotosIsolate(SendPort port) async {
 @pragma('vm:entry-point')
 void spawnScreenshotIsolate(SendPort port) async {
   final assetPaths =
-      await PhotoManager.getAssetPathList(type: RequestType.image);
+  await PhotoManager.getAssetPathList(type: RequestType.image);
   List<AssetEntity> photoAssets = <AssetEntity>[];
   // 获取所有图片资源对象
   for (var album in assetPaths) {
@@ -98,7 +99,7 @@ void spawnScreenshotIsolate(SendPort port) async {
       final count = await album.assetCountAsync;
       if (count > 0) {
         final screenshotAssets =
-            await album.getAssetListRange(start: 0, end: count);
+        await album.getAssetListRange(start: 0, end: count);
         photoAssets.addAll(screenshotAssets);
       }
       break;
@@ -139,33 +140,33 @@ void spawnScreenshotIsolate(SendPort port) async {
   }
 }
 
-Map<String, AssetEntity> hashs = {};
+// Map<String, AssetEntity> hashs = {};
 bool findSamePhotos = false;
-_imageHashCompare(SendPort port) {
+_imageHashCompare(SendPort port, Map<String, AssetEntity> rangeMap) {
   /// 分组逻辑
   List<Map<String, dynamic>> groups = [];
   Set<String> useHashId = <String>{};
-  for (var i = 0; i < hashs.length; i++) {
-    final currentHash = hashs.keys.toList()[i];
+  for (var i = 0; i < rangeMap.length; i++) {
+    final currentHash = rangeMap.keys.toList()[i];
     Set<String> groupIds = <String>{};
     if (useHashId.contains(currentHash)) continue;
     useHashId.add(currentHash);
-    for (var j = 0; j < hashs.length; j++) {
+    for (var j = i; j < rangeMap.length; j++) {
       if (Platform.isAndroid) {
         throw Exception('');
       }
-      final nextHash = hashs.keys.toList()[j];
+      final nextHash = rangeMap.keys.toList()[j];
       if (useHashId.contains(nextHash)) continue;
       if (currentHash == nextHash) continue;
       final distance = ImageHashUtil.compareHashes(currentHash, nextHash);
       // print('distance.....$distance');
-      if (distance > 0.80) {
+      if (distance > 0.75) {
         useHashId.add(nextHash);
         // print('找到相似图片.....');
         findSamePhotos = true;
         // 添加组
-        groupIds.add(hashs[currentHash]!.id);
-        groupIds.add(hashs[nextHash]!.id);
+        groupIds.add(rangeMap[currentHash]!.id);
+        groupIds.add(rangeMap[nextHash]!.id);
       }
     }
     if (groupIds.length >= 2) {
@@ -188,12 +189,13 @@ _imageHashCompare(SendPort port) {
 
 @pragma('vm:entry-point')
 void spawnSamePhotosIsolate(SendPort port) async {
+  var start = DateTime.now().millisecondsSinceEpoch;
   // 获取所有图片资源对象
-  // Map<String, AssetEntity> hashs = {};
+  Map<String, AssetEntity> hashs = {};
   PhotoManagerTool.allPhotoAssets = [];
   int compareCount = 50;
   final assetPaths =
-      await PhotoManager.getAssetPathList(type: RequestType.image);
+  await PhotoManager.getAssetPathList(type: RequestType.image);
   double albumCompareProgerss = compareCount / assetPaths.length;
   if (assetPaths.isNotEmpty) {
     for (var album in assetPaths) {
@@ -205,27 +207,72 @@ void spawnSamePhotosIsolate(SendPort port) async {
         final asset = assetItems[i];
         final bytes = await asset.thumbnailData;
         if (bytes != null) {
-          final hash = ImageHashUtil.calculatePHash(img.decodeImage(bytes)!);
+          var hash = ImageHashUtil.calculatePHash(img.decodeImage(bytes)!)+ i.toString();
           // final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
           hashs[hash] = asset;
+          print('hash.....$hash');
+
+          ///==old==
           // 每生成50张 对比一次
-          if (hashs.length % 50 == 0) {
-            _imageHashCompare(port);
-            double imageProcessProgress =
-                (i + 1) / assetItems.length * assetCompareProgress * 33.33;
-            // print('same++++++$imageProcessProgress');
-            port.send({
-              "event": "TaskProgressEvent",
-              "type": 'samePhoto',
-              "progress": imageProcessProgress,
-            });
+          // if (hashs.length % 50 == 0) {
+          //   _imageHashCompare(port);
+          //   double imageProcessProgress =
+          //       (i + 1) / assetItems.length * assetCompareProgress * 33.33;
+          //   // print('same++++++$imageProcessProgress');
+          //   port.send({
+          //     "event": "TaskProgressEvent",
+          //     "type": 'samePhoto',
+          //     "progress": imageProcessProgress,
+          //   });
+          // }
+
+
+
+          ///==new==
+          var flag = 50;
+          var step = 2;
+
+          if(assetItems.length < flag){
+            List<String> sortedKeys = hashs.keys.toList();
+            List<String> rangeKeys = [];
+            rangeKeys = sortedKeys;
+            Map<String, AssetEntity> rangeMap = Map.fromIterable(rangeKeys, key: (key) => key, value: (key) => hashs[key]!,);
+            _imageHashCompare(port, rangeMap);
+          }else if ( assetItems.length -1 == i && hashs.length % flag != 0 ) {
+            List<String> sortedKeys = hashs.keys.toList();
+            List<String> rangeKeys = [];
+            rangeKeys = sortedKeys.sublist(i, assetItems.length-1);
+            Map<String, AssetEntity> rangeMap = Map.fromIterable(rangeKeys, key: (key) => key, value: (key) => hashs[key]!,);
+            _imageHashCompare(port, rangeMap);
+          }else if ( hashs.length % flag == 0 ) {
+            List<String> sortedKeys = hashs.keys.toList();
+            List<String> rangeKeys = [];
+            if(i <= flag){
+              rangeKeys = sortedKeys.sublist(i+1 - flag, i);
+            }else{
+              rangeKeys = sortedKeys.sublist(i+1 - flag -step, i);
+            }
+            Map<String, AssetEntity> rangeMap = Map.fromIterable(rangeKeys, key: (key) => key, value: (key) => hashs[key]!,);
+            _imageHashCompare(port, rangeMap);
+            sortedKeys.clear();
+            rangeKeys.clear();
+            rangeMap.clear();
           }
-          // print('hash.....$hash');
+
+
+          double imageProcessProgress =
+              (i + 1) / assetItems.length * assetCompareProgress * 33.33;
+          // print('same++++++$imageProcessProgress');
+          port.send({
+            "event": "TaskProgressEvent",
+            "type": 'samePhoto',
+            "progress": imageProcessProgress,
+          });
         }
       }
+      break;
     }
   }
-  _imageHashCompare(port);
   if (!findSamePhotos) {
     port.send({
       "event": "sameEvent",
@@ -237,6 +284,8 @@ void spawnSamePhotosIsolate(SendPort port) async {
     "type": 'samePhoto',
     "progress": 33.33,
   });
+  var end = DateTime.now().millisecondsSinceEpoch;
+  print('相似度总耗时.....${end - start}');
 }
 
 void main() async {
@@ -257,7 +306,7 @@ void main() async {
       print("--- Missing Key: $key, languageCode: ${locale!.languageCode}");
     },
   );
-  
+
   final rootDir = await MMKV.initialize();
   print('MMKV for flutter with rootDir = $rootDir');
 
@@ -312,7 +361,7 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.light,
             pageTransitionsTheme: PageTransitionsTheme(
               builders:
-                  Map<TargetPlatform, PageTransitionsBuilder>.fromIterable(
+              Map<TargetPlatform, PageTransitionsBuilder>.fromIterable(
                 TargetPlatform.values,
                 value: (dynamic _) => const CupertinoPageTransitionsBuilder(),
               ),
