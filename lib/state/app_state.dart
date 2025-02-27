@@ -321,11 +321,11 @@ class AppState extends ChangeNotifier {
   void getDiskInfo() async {
     final tz = await SystemDeviceInfo.totalSize();
     if (tz != null) {
-      totalSize = AppUtils.fileSizeFormat(tz);
+      totalSize = AppUtils.fileSizeFormat(tz,toFixed: 0);
     }
     final fz = await SystemDeviceInfo.freeSize();
     if (fz != null) {
-      useSize = AppUtils.fileSizeFormat(tz! - fz);
+      useSize = AppUtils.fileSizeFormat(tz! - fz,toFixed: 0);
       final value = ((tz - fz) / tz) * 100;
       if (value > 90) {
         color = const Color(0xffEC5C0C);

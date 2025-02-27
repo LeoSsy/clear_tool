@@ -33,6 +33,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   List<ImageAsset> datas = [];
   Map<String, Uint8List?> originBytesMap = {};
   Map<String, Uint8List?> listOriginBytesMap = {};
+  Map<String, Size?> orginImageSize = {};
 
   @override
   void initState() {
@@ -52,17 +53,17 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   /// 加载指定的图片数据
   void loadAssetBytes() async {
-    await _loadOriginBytes(datas[widget.index]);
-    setState(() {});
+    await _loadOriginBytes(datas[_current]);
+    if (mounted) setState(() {});
   }
 
   /// 加载前后图片
   void loadLRImageData() async {
-    const count = 3;
-    if (originBytesMap.keys.toList().length >= 20) {
+    const count = 2;
+    if (originBytesMap.keys.toList().length >= 10) {
       /// 清理最前面的图片
-      for (var i = 0; i < count * 2 + 1; i++) {
-        originBytesMap[originBytesMap.keys.toList()[i]] = null;
+      for (var i = 0; i < count * 2; i++) {
+        originBytesMap.remove(originBytesMap.keys.toList()[i]);
       }
     }
     final start = max(_current - count, 0);
@@ -73,8 +74,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
         continue;
       }
       await _loadOriginBytes(asset);
+      if (mounted) setState(() {});
     }
-    if (mounted) setState(() {});
   }
 
   /// 对pageview 和 listview偏移同步
@@ -181,6 +182,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                           _pageController.animateToPage(index,
                               duration: const Duration(milliseconds: 100),
                               curve: Curves.linear);
+                          loadAssetBytes();
                         },
                         child: Container(
                           decoration: BoxDecoration(
@@ -203,8 +205,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                                   builder: (context, snapshot) {
                                     if (snapshot.data != null) {
                                       return ExtendedImage.memory(
-                                        listOriginBytesMap[
-                                            assets.assetEntity.id]!,
+                                        snapshot.data!,
                                         fit: BoxFit.cover,
                                       );
                                     } else {
@@ -227,7 +228,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   // 计算等比例宽高
   Size _getImageSize(ImageAsset asset) {
-    // 计算等比例宽高
+    if (orginImageSize[asset.assetEntity.id] != null) {
+      return orginImageSize[asset.assetEntity.id]!;
+    }
     final imageShowW = AppUtils.screenW;
     final imageShowH = AppUtils.screenH -
         (AppUtils.safeAreapadding.bottom +
@@ -239,6 +242,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
     final originH = asset.assetEntity.height;
     final resultW = imageShowW * originH / imageShowH;
     final resultH = imageShowH * originW / imageShowW;
+    orginImageSize[asset.assetEntity.id] = Size(resultW, resultH);
     return Size(resultW, resultH);
   }
 
@@ -259,14 +263,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Future<Uint8List?> _loadListOriginBytes(ImageAsset asset) async {
-    if (listOriginBytesMap.keys.toList().length >= 20) {
-      // 清理前最前面10个
-      for (var i = 0; i < 10; i++) {
-        listOriginBytesMap[listOriginBytesMap.keys.toList()[i]] = null;
-      }
-    }
     final thumbnailData = await asset.assetEntity
-        .thumbnailDataWithSize(const ThumbnailSize(180, 180));
+        .thumbnailDataWithSize(const ThumbnailSize(90, 90));
     if (thumbnailData != null) {
       listOriginBytesMap[asset.assetEntity.id] = thumbnailData;
       return thumbnailData;
