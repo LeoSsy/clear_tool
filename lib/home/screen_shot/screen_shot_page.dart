@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:math';
 import 'dart:typed_data';
+
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
@@ -13,9 +13,7 @@ import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/permission_utils.dart';
 import 'package:clear_tool/utils/toast_utils.dart';
 import 'package:clear_tool/widget/empty_widget.dart';
-import 'package:extended_image/extended_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:photo_manager/photo_manager.dart';
 
 class ScreenShotPage extends StatefulWidget {
@@ -31,6 +29,10 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
   List<ImageAsset> selPhotos = [];
   bool isAllSel = false;
   bool isScrolling = false;
+  Map<String, Uint8List?> thumbnailBytesMap = {};
+
+  /// 最多缓存100张
+  int maxCacheCount = 100;
 
   @override
   void initState() {
@@ -59,11 +61,6 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
   @override
   void dispose() {
     allSelectedPhotos(false);
-    for (var asset in screenshots) {
-      asset.thumnailBytes = null;
-      asset.originBytes = null;
-      asset.originalFilePath = null;
-    }
     super.dispose();
   }
 
@@ -176,22 +173,24 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
-                                      child: assets.thumnailBytes != null
-                                          ? ExtendedImage.memory(
-                                              assets.thumnailBytes!,
+                                      child: thumbnailBytesMap[assets.assetEntity.id] != null
+                                          ? Image.memory(
+                                              thumbnailBytesMap[assets.assetEntity.id]!,
                                               fit: BoxFit.cover,
                                               width: imgW,
                                               height: imgW,
                                             )
                                           : FutureBuilder(
-                                              future:
-                                                  _loadImage(assets, 180, 180),
+                                              future: _loadImage(
+                                                  assets,
+                                                  (imgW * 4).toInt(),
+                                                  (imgW * 4).toInt()),
                                               builder: (context, snapshot) {
                                                 if (snapshot.connectionState ==
                                                     ConnectionState.done) {
                                                   return snapshot.data != null
-                                                      ? ExtendedImage.memory(
-                                                          assets.thumnailBytes!,
+                                                      ? Image.memory(
+                                                          snapshot.data!,
                                                           fit: BoxFit.cover,
                                                           width: imgW,
                                                           height: imgW,
@@ -362,10 +361,17 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
     if (asset.thumnailBytes != null) {
       return asset.thumnailBytes;
     } else {
+      if (thumbnailBytesMap.length >= screenPhotoCachesCount) {
+        int countToRemove = (screenPhotoCachesCount * 0.5).toInt();
+        List<String> keys = thumbnailBytesMap.keys.toList();
+        for (int i = 0; i < countToRemove && i < keys.length; i++) {
+          thumbnailBytesMap.remove(keys[i]);
+        }
+      }
       final thumbnailData = await asset.assetEntity
           .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
       if (thumbnailData != null) {
-        asset.thumnailBytes = thumbnailData;
+        thumbnailBytesMap[asset.assetEntity.id] = thumbnailData;
         return thumbnailData;
       } else {
         return null;

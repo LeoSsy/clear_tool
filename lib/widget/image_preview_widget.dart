@@ -34,6 +34,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   Map<String, Uint8List?> originBytesMap = {};
   Map<String, Uint8List?> listOriginBytesMap = {};
   Map<String, Size?> orginImageSize = {};
+  int maxCacheCount = 100;
+  int listMaxCacheCount = 300;
 
   @override
   void initState() {
@@ -59,13 +61,14 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
 
   /// 加载前后图片
   void loadLRImageData() async {
-    const count = 2;
-    if (originBytesMap.keys.toList().length >= 10) {
-      /// 清理最前面的图片
-      for (var i = 0; i < count * 2; i++) {
-        originBytesMap.remove(originBytesMap.keys.toList()[i]);
+    if (originBytesMap.length >= maxCacheCount) {
+      int countToRemove = (maxCacheCount * 0.5).toInt();
+      List<String> keys = originBytesMap.keys.toList();
+      for (int i = 0; i < countToRemove && i < keys.length; i++) {
+        originBytesMap.remove(keys[i]);
       }
     }
+    const count = 2;
     final start = max(_current - count, 0);
     final end = min(_current + count, datas.length);
     final tempList = datas.sublist(start, end);
@@ -118,6 +121,8 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                           child: ExtendedImage.memory(
                             originBytesMap[asset.assetEntity.id]!,
                             mode: ExtendedImageMode.gesture,
+                            cacheRawData: false,
+                            clearMemoryCacheWhenDispose: true,
                             initGestureConfigHandler: (state) {
                               return GestureConfig(
                                 minScale: 0.9,
@@ -196,7 +201,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                           margin: const EdgeInsets.only(right: 6),
                           child: listOriginBytesMap[assets.assetEntity.id] !=
                                   null
-                              ? ExtendedImage.memory(
+                              ? Image.memory(
                                   listOriginBytesMap[assets.assetEntity.id]!,
                                   fit: BoxFit.cover,
                                 )
@@ -204,7 +209,7 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
                                   future: _loadListOriginBytes(assets),
                                   builder: (context, snapshot) {
                                     if (snapshot.data != null) {
-                                      return ExtendedImage.memory(
+                                      return Image.memory(
                                         snapshot.data!,
                                         fit: BoxFit.cover,
                                       );
@@ -247,6 +252,9 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Future<Uint8List?> _loadOriginBytes(ImageAsset asset) async {
+    if (originBytesMap[asset.assetEntity.id] != null) {
+      return originBytesMap[asset.assetEntity.id];
+    }
     final resultSize = _getImageSize(asset);
     final thumbnailData = await asset.assetEntity.thumbnailDataWithSize(
       ThumbnailSize(
@@ -263,9 +271,19 @@ class _ImagePreviewWidgetState extends State<ImagePreviewWidget> {
   }
 
   Future<Uint8List?> _loadListOriginBytes(ImageAsset asset) async {
+    if (listOriginBytesMap[asset.assetEntity.id] != null) {
+      return listOriginBytesMap[asset.assetEntity.id];
+    }
     final thumbnailData = await asset.assetEntity
-        .thumbnailDataWithSize(const ThumbnailSize(90, 90));
+        .thumbnailDataWithSize(const ThumbnailSize(220, 220));
     if (thumbnailData != null) {
+      if (listOriginBytesMap.length >= listMaxCacheCount) {
+        int countToRemove = (listMaxCacheCount * 0.5).toInt();
+        List<String> keys = listOriginBytesMap.keys.toList();
+        for (int i = 0; i < countToRemove && i < keys.length; i++) {
+          listOriginBytesMap.remove(keys[i]);
+        }
+      }
       listOriginBytesMap[asset.assetEntity.id] = thumbnailData;
       return thumbnailData;
     } else {

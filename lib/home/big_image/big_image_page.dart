@@ -33,6 +33,10 @@ class _BigImagePageState extends State<BigImagePage> {
   bool isScrolling = false;
 
   int totalSize = 0;
+  Map<String, Uint8List?> thumbnailBytesMap = {};
+
+  /// 最多缓存100张
+  int maxCacheCount = 100;
 
   @override
   void initState() {
@@ -62,11 +66,6 @@ class _BigImagePageState extends State<BigImagePage> {
   @override
   void dispose() {
     allSelectedPhotos(false);
-   for (var asset in bigPhotos) {
-     asset.thumnailBytes = null;
-     asset.originBytes = null;
-     asset.originalFilePath = null;
-   }
     super.dispose();
   }
 
@@ -193,12 +192,13 @@ class _BigImagePageState extends State<BigImagePage> {
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(4),
-                                      child: assets.thumnailBytes != null
+                                      child: thumbnailBytesMap[assets.assetEntity.id] != null
                                           ? ExtendedImage.memory(
-                                              assets.thumnailBytes!,
+                                              thumbnailBytesMap[assets.assetEntity.id]!,
                                               fit: BoxFit.cover,
                                               width: imgW,
                                               height: imgW,
+                                              clearMemoryCacheWhenDispose: true,
                                             )
                                           : isScrolling
                                               ? Image.asset(
@@ -218,11 +218,10 @@ class _BigImagePageState extends State<BigImagePage> {
                                                         ConnectionState.done) {
                                                       return snapshot.data !=
                                                               null
-                                                          ? ExtendedImage
-                                                              .memory(
-                                                              assets
-                                                                  .thumnailBytes!,
+                                                          ? ExtendedImage.memory(
+                                                             snapshot.data!,
                                                               fit: BoxFit.cover,
+                                                              clearMemoryCacheWhenDispose: true,
                                                               width: imgW,
                                                               height: imgW,
                                                             )
@@ -425,16 +424,22 @@ class _BigImagePageState extends State<BigImagePage> {
   Future<Uint8List?> _loadImage(ImageAsset asset, int imgW, int imgH) async {
     if (asset.thumnailBytes != null) {
       return asset.thumnailBytes;
-    }else{
-    final thumbnailData = await asset.assetEntity
-        .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
-    if (thumbnailData != null) {
-      asset.thumnailBytes = thumbnailData;
-      return thumbnailData;
     } else {
-      return null;
+      if (thumbnailBytesMap.length >= bigPhotoCachesCount) {
+        int countToRemove = (bigPhotoCachesCount * 0.5).toInt();
+        List<String> keys = thumbnailBytesMap.keys.toList();
+        for (int i = 0; i < countToRemove && i < keys.length; i++) {
+          thumbnailBytesMap.remove(keys[i]);
+        }
+      }
+      final thumbnailData = await asset.assetEntity
+          .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
+      if (thumbnailData != null) {
+        thumbnailBytesMap[asset.assetEntity.id] = thumbnailData;
+        return thumbnailData;
+      } else {
+        return null;
+      }
     }
-    }
-
   }
 }

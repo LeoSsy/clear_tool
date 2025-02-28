@@ -103,28 +103,30 @@ class HomeScreen extends HookWidget {
                       margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
                       child: Row(
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${appState.sameCount()} ${AppUtils.i18Translate('home.sheet', context: context)}',
-                                style: TextStyle(
-                                  fontSize: 10.autoSize,
-                                  color: const Color(0xff5E1FB2),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${appState.sameCount()} ${AppUtils.i18Translate('home.sheet', context: context)}',
+                                  style: TextStyle(
+                                    fontSize: 10.autoSize,
+                                    color: const Color(0xff5E1FB2),
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                appState.samePhotoSize > 0
-                                    ? AppUtils.fileSizeFormat(appState.samePhotoSize)
-                                    : '0KB',
-                                style: TextStyle(
-                                  fontSize: 10.autoSize,
-                                  color: const Color(0xff5E1FB2),
+                                Text(
+                                  appState.samePhotoSize > 0
+                                      ? AppUtils.fileSizeFormat(
+                                          appState.samePhotoSize)
+                                      : '0KB',
+                                  style: TextStyle(
+                                    fontSize: 10.autoSize,
+                                    color: const Color(0xff5E1FB2),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const Spacer(),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
                             size: 8.autoSize,
@@ -201,7 +203,10 @@ class HomeScreen extends HookWidget {
                                   ),
                                 ),
                                 Text(
-                                  appState.bigPhotoSize > 0 ? AppUtils.fileSizeFormat(appState.bigPhotoSize) : '0KB',
+                                  appState.bigPhotoSize > 0
+                                      ? AppUtils.fileSizeFormat(
+                                          appState.bigPhotoSize)
+                                      : '0KB',
                                   style: TextStyle(
                                     fontSize: 10.autoSize!,
                                     color: const Color(0xff1C6EAA),
@@ -275,28 +280,30 @@ class HomeScreen extends HookWidget {
                       margin: EdgeInsets.symmetric(horizontal: 9.autoSize!),
                       child: Row(
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${appState.screenPhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}',
-                                style: TextStyle(
-                                  fontSize: 10.autoSize!,
-                                  color: const Color(0xff1B5FC4),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '${appState.screenPhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}',
+                                  style: TextStyle(
+                                    fontSize: 10.autoSize!,
+                                    color: const Color(0xff1B5FC4),
+                                  ),
                                 ),
-                              ),
-                              Text(
-                                appState.screenPhotoSize > 0
-                                    ? AppUtils.fileSizeFormat(appState.screenPhotoSize)
-                                    : '0KB',
-                                style: TextStyle(
-                                  fontSize: 10.autoSize!,
-                                  color: const Color(0xff1B5FC4),
+                                Text(
+                                  appState.screenPhotoSize > 0
+                                      ? AppUtils.fileSizeFormat(
+                                          appState.screenPhotoSize)
+                                      : '0KB',
+                                  style: TextStyle(
+                                    fontSize: 10.autoSize!,
+                                    color: const Color(0xff1B5FC4),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
-                          const Spacer(),
                           Icon(
                             Icons.arrow_forward_ios_rounded,
                             size: 8.autoSize,

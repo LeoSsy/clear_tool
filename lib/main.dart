@@ -191,14 +191,11 @@ void spawnSamePhotosIsolate(SendPort port) async {
   // 获取所有图片资源对象
   Map<String, AssetEntity> hashs = {};
   PhotoManagerTool.allPhotoAssets = [];
-  int compareCount = 50;
   final assetPaths =
       await PhotoManager.getAssetPathList(type: RequestType.image);
-  double albumCompareProgerss = compareCount / assetPaths.length;
   if (assetPaths.isNotEmpty) {
     for (var album in assetPaths) {
       int count = await album.assetCountAsync;
-      double assetCompareProgress = albumCompareProgerss / count;
       if (count == 0) continue;
       final assetItems = await album.getAssetListRange(start: 0, end: count);
       for (var i = 0; i < assetItems.length; i++) {
@@ -209,7 +206,7 @@ void spawnSamePhotosIsolate(SendPort port) async {
               i.toString();
           // final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
           hashs[hash] = asset;
-          print('hash.....$hash');
+          // print('hash.....$hash');
 
           ///==old==
           // 每生成50张 对比一次
@@ -269,7 +266,7 @@ void spawnSamePhotosIsolate(SendPort port) async {
           }
 
           double imageProcessProgress =
-              (i + 1) / assetItems.length * assetCompareProgress * 33.33;
+              (i + 1) / assetItems.length * 33.33;
           // print('same++++++$imageProcessProgress');
           port.send({
             "event": "TaskProgressEvent",

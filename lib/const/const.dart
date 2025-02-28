@@ -11,6 +11,11 @@ const int imgUnitOfAccount = 1000;
 /// 压缩过的缓存
 const String imageCompressedCacheKey = "imageCompressedCacheKey";
 
+/// 内存缓存个数
+const bigPhotoCachesCount = 150;
+const samePhotoCachesCount = 150;
+const screenPhotoCachesCount = 150;
+
 class ImageAsset {
   final AssetEntity assetEntity;
   bool selected = false;
