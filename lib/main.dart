@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:collection';
 import 'dart:io';
 import 'dart:isolate';
-
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
 import 'package:clear_tool/event/event_define.dart';
@@ -31,7 +29,7 @@ FlutterIsolate? screenshotPhotoIsolate;
 void spawnBigPhotosIsolate(SendPort port) async {
   PhotoManagerTool.allPhotoAssets = [];
   final assetPaths =
-  await PhotoManager.getAssetPathList(type: RequestType.image);
+      await PhotoManager.getAssetPathList(type: RequestType.image);
   // 获取所有图片资源对象
   int bigPhotoSize = 0;
   for (var album in assetPaths) {
@@ -69,7 +67,7 @@ void spawnBigPhotosIsolate(SendPort port) async {
         }
       }
       final index = assetItems.indexOf(asset);
-      double imageProcessProgress = ((index +1) / assetItems.length) * 33.33;
+      double imageProcessProgress = ((index + 1) / assetItems.length) * 33.33;
       port.send({
         "event": "TaskProgressEvent",
         "type": 'bigPhoto',
@@ -91,52 +89,52 @@ void spawnBigPhotosIsolate(SendPort port) async {
 @pragma('vm:entry-point')
 void spawnScreenshotIsolate(SendPort port) async {
   final assetPaths =
-  await PhotoManager.getAssetPathList(type: RequestType.image);
-  List<AssetEntity> photoAssets = <AssetEntity>[];
+      await PhotoManager.getAssetPathList(type: RequestType.image);
   // 获取所有图片资源对象
   for (var album in assetPaths) {
     if (album.name == 'Screenshots') {
       final count = await album.assetCountAsync;
       if (count > 0) {
         final screenshotAssets =
-        await album.getAssetListRange(start: 0, end: count);
-        photoAssets.addAll(screenshotAssets);
+            await album.getAssetListRange(start: 0, end: count);
+        if (screenshotAssets.isEmpty) {
+          port.send({
+            "event": "TaskProgressEvent",
+            "type": 'screenshotPhoto',
+            "progress": 33.33,
+          });
+          port.send({
+            "event": "screenshotEvent",
+            "data": null,
+            'size': 0,
+          });
+          break;
+        } else {
+          int totalSize = 0;
+          for (var i = 0; i < screenshotAssets.length; i++) {
+            final asset = screenshotAssets[i];
+            final originalFile = await asset.originFile;
+            if (originalFile != null) {
+              final length = await originalFile.length();
+              totalSize += length;
+              port.send({
+                "event": "screenshotEvent",
+                "data": asset.id,
+                'size': totalSize,
+              });
+            }
+            double imageProcessProgress =
+                ((i + 1) / screenshotAssets.length) * 33.33;
+            port.send({
+              "event": "TaskProgressEvent",
+              "type": 'screenshotPhoto',
+              "progress": imageProcessProgress,
+            });
+          }
+        }
       }
       break;
     }
-  }
-  if (photoAssets.isEmpty) {
-    port.send({
-      "event": "TaskProgressEvent",
-      "type": 'screenshotPhoto',
-      "progress": 33.33,
-    });
-    port.send({
-      "event": "screenshotEvent",
-      "data": null,
-      'size': 0,
-    });
-    return;
-  }
-  int totalSize = 0;
-  for (var i = 0; i < photoAssets.length; i++) {
-    final asset = photoAssets[i];
-    final originalFile = await asset.file;
-    if (originalFile != null) {
-      final length = await originalFile.length();
-      totalSize += length;
-      port.send({
-        "event": "screenshotEvent",
-        "data": asset.id,
-        'size': totalSize,
-      });
-    }
-    double imageProcessProgress = ((i+1) / photoAssets.length) * 33.33;
-    port.send({
-      "event": "TaskProgressEvent",
-      "type": 'screenshotPhoto',
-      "progress": imageProcessProgress,
-    });
   }
 }
 
@@ -195,7 +193,7 @@ void spawnSamePhotosIsolate(SendPort port) async {
   PhotoManagerTool.allPhotoAssets = [];
   int compareCount = 50;
   final assetPaths =
-  await PhotoManager.getAssetPathList(type: RequestType.image);
+      await PhotoManager.getAssetPathList(type: RequestType.image);
   double albumCompareProgerss = compareCount / assetPaths.length;
   if (assetPaths.isNotEmpty) {
     for (var album in assetPaths) {
@@ -207,7 +205,8 @@ void spawnSamePhotosIsolate(SendPort port) async {
         final asset = assetItems[i];
         final bytes = await asset.thumbnailData;
         if (bytes != null) {
-          var hash = ImageHashUtil.calculatePHash(img.decodeImage(bytes)!)+ i.toString();
+          var hash = ImageHashUtil.calculatePHash(img.decodeImage(bytes)!) +
+              i.toString();
           // final hash = ImageHashUtil.calculateDHash(img.decodeImage(bytes)!);
           hashs[hash] = asset;
           print('hash.....$hash');
@@ -226,39 +225,48 @@ void spawnSamePhotosIsolate(SendPort port) async {
           //   });
           // }
 
-
-
           ///==new==
           var flag = 50;
           var step = 2;
 
-          if(assetItems.length < flag){
+          if (assetItems.length < flag) {
             List<String> sortedKeys = hashs.keys.toList();
             List<String> rangeKeys = [];
             rangeKeys = sortedKeys;
-            Map<String, AssetEntity> rangeMap = Map.fromIterable(rangeKeys, key: (key) => key, value: (key) => hashs[key]!,);
+            Map<String, AssetEntity> rangeMap = Map.fromIterable(
+              rangeKeys,
+              key: (key) => key,
+              value: (key) => hashs[key]!,
+            );
             _imageHashCompare(port, rangeMap);
-          }else if ( assetItems.length -1 == i && hashs.length % flag != 0 ) {
+          } else if (assetItems.length - 1 == i && hashs.length % flag != 0) {
             List<String> sortedKeys = hashs.keys.toList();
             List<String> rangeKeys = [];
-            rangeKeys = sortedKeys.sublist(i, assetItems.length-1);
-            Map<String, AssetEntity> rangeMap = Map.fromIterable(rangeKeys, key: (key) => key, value: (key) => hashs[key]!,);
+            rangeKeys = sortedKeys.sublist(i, assetItems.length - 1);
+            Map<String, AssetEntity> rangeMap = Map.fromIterable(
+              rangeKeys,
+              key: (key) => key,
+              value: (key) => hashs[key]!,
+            );
             _imageHashCompare(port, rangeMap);
-          }else if ( hashs.length % flag == 0 ) {
+          } else if (hashs.length % flag == 0) {
             List<String> sortedKeys = hashs.keys.toList();
             List<String> rangeKeys = [];
-            if(i <= flag){
-              rangeKeys = sortedKeys.sublist(i+1 - flag, i);
-            }else{
-              rangeKeys = sortedKeys.sublist(i+1 - flag -step, i);
+            if (i <= flag) {
+              rangeKeys = sortedKeys.sublist(i + 1 - flag, i);
+            } else {
+              rangeKeys = sortedKeys.sublist(i + 1 - flag - step, i);
             }
-            Map<String, AssetEntity> rangeMap = Map.fromIterable(rangeKeys, key: (key) => key, value: (key) => hashs[key]!,);
+            Map<String, AssetEntity> rangeMap = Map.fromIterable(
+              rangeKeys,
+              key: (key) => key,
+              value: (key) => hashs[key]!,
+            );
             _imageHashCompare(port, rangeMap);
             sortedKeys.clear();
             rangeKeys.clear();
             rangeMap.clear();
           }
-
 
           double imageProcessProgress =
               (i + 1) / assetItems.length * assetCompareProgress * 33.33;
@@ -299,7 +307,10 @@ void main() async {
       // useCountryCode: true,
       // fallbackDir: 'en',
       basePath: 'assets/i18n',
-      forcedLocale: Locale(WidgetsBinding.instance.window.locale.languageCode == "zh" ? "zh" : 'en'),
+      forcedLocale: Locale(
+          WidgetsBinding.instance.window.locale.languageCode == "zh"
+              ? "zh"
+              : 'en'),
     ),
     missingTranslationHandler: (key, locale) {
       // ignore: avoid_print
@@ -361,7 +372,7 @@ class MyApp extends StatelessWidget {
             brightness: Brightness.light,
             pageTransitionsTheme: PageTransitionsTheme(
               builders:
-              Map<TargetPlatform, PageTransitionsBuilder>.fromIterable(
+                  Map<TargetPlatform, PageTransitionsBuilder>.fromIterable(
                 TargetPlatform.values,
                 value: (dynamic _) => const CupertinoPageTransitionsBuilder(),
               ),
