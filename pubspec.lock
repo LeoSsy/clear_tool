@@ -614,10 +614,10 @@ packages:
     dependency: "direct main"
     description:
       name: system_device_info
-      sha256: "999637956a390a254b68309e04ceaa18dfffc7896fd59b928b050c007422bdf2"
+      sha256: cc2b97cc0bb76366f548698a448b0dcf54c9deede33ecd602d8d891e9bffbe94
       url: "https://pub.flutter-io.cn"
     source: hosted
-    version: "0.0.8"
+    version: "0.0.10"
   term_glyph:
     dependency: transitive
     description:

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 import 'dart:typed_data';
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
@@ -14,7 +13,6 @@ import 'package:clear_tool/utils/app_utils.dart';
 import 'package:clear_tool/utils/toast_utils.dart';
 import 'package:clear_tool/widget/empty_widget.dart';
 import 'package:extended_image/extended_image.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:mmkv/mmkv.dart';
@@ -64,6 +62,11 @@ class _BigImagePageState extends State<BigImagePage> {
   @override
   void dispose() {
     allSelectedPhotos(false);
+   for (var asset in bigPhotos) {
+     asset.thumnailBytes = null;
+     asset.originBytes = null;
+     asset.originalFilePath = null;
+   }
     super.dispose();
   }
 
@@ -420,6 +423,9 @@ class _BigImagePageState extends State<BigImagePage> {
   }
 
   Future<Uint8List?> _loadImage(ImageAsset asset, int imgW, int imgH) async {
+    if (asset.thumnailBytes != null) {
+      return asset.thumnailBytes;
+    }else{
     final thumbnailData = await asset.assetEntity
         .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
     if (thumbnailData != null) {
@@ -428,5 +434,7 @@ class _BigImagePageState extends State<BigImagePage> {
     } else {
       return null;
     }
+    }
+
   }
 }

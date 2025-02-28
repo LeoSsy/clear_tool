@@ -147,7 +147,9 @@ class ClearPage extends HookWidget {
                               ),
                             ),
                             Text(
-                              '（${appState.samePhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}, ${AppUtils.fileSizeFormat(appState.samePhotoSize)}）',
+                              appState.samePhotos !=null && appState.samePhotos!.isEmpty ?
+                                '（${AppUtils.i18Translate('common.noFilesClean', context: context)}）' :
+                               '（${appState.samePhotos?.length ?? 0} ${AppUtils.i18Translate('home.sheet', context: context)}, ${AppUtils.fileSizeFormat(appState.samePhotoSize)}）',
                               style: const TextStyle(
                                 fontSize: 14,
                                 color: AppColor.subTitle999,

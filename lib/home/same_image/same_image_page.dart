@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:typed_data';
-
 import 'package:app_settings/app_settings.dart';
 import 'package:clear_tool/const/colors.dart';
 import 'package:clear_tool/const/const.dart';
@@ -15,7 +14,6 @@ import 'package:clear_tool/widget/empty_widget.dart';
 import 'package:extended_image/extended_image.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:group_grid_view/group_grid_view.dart';
 import 'package:photo_manager/photo_manager.dart';
 
@@ -89,6 +87,13 @@ class _SameImagePageState extends State<SameImagePage> {
   @override
   void dispose() {
     allSelectedPhotos(false);
+    for (var group in samePhotos) {
+      for (var asset in group.assets) {
+        asset.thumnailBytes = null;
+        asset.originBytes = null;
+        asset.originalFilePath = null;
+      }
+    }
     super.dispose();
   }
 
@@ -259,12 +264,9 @@ class _SameImagePageState extends State<SameImagePage> {
                                         fit: BoxFit.cover,
                                         width: imgW,
                                         height: imgW,
-                                        cacheWidth: imgW.toInt(),
-                                        cacheHeight: imgW.toInt(),
                                       )
                                     : FutureBuilder(
-                                        future: _loadImage(assets,
-                                            imgW.toInt() * 5, imgW.toInt() * 5),
+                                        future: _loadImage(assets, 180, 180),
                                         builder: (context, snapshot) {
                                           if (snapshot.connectionState ==
                                               ConnectionState.done) {
@@ -274,8 +276,6 @@ class _SameImagePageState extends State<SameImagePage> {
                                                     fit: BoxFit.cover,
                                                     width: imgW,
                                                     height: imgW,
-                                                    cacheWidth: imgW.toInt(),
-                                                    cacheHeight: imgW.toInt(),
                                                   )
                                                 : Image.asset(
                                                     'assets/images/common/placeholder.png',
@@ -486,40 +486,52 @@ class _SameImagePageState extends State<SameImagePage> {
   }
 
   Future<Uint8List?> _loadImage(ImageAsset asset, int imgW, int imgH) async {
-    final thumbnailData = await asset.assetEntity
-        .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
-    if (thumbnailData != null) {
-      asset.thumnailBytes = thumbnailData;
-      return thumbnailData;
+    if (asset.thumnailBytes != null) {
+      return asset.thumnailBytes;
     } else {
-      return null;
+      final thumbnailData = await asset.assetEntity
+          .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
+      if (thumbnailData != null) {
+        asset.thumnailBytes = thumbnailData;
+        return thumbnailData;
+      } else {
+        return null;
+      }
     }
   }
 
   Future<String?> _loadGroupImageSize(SamePhotoGroup group) async {
     int totalSize = 0;
-    for (var asset in group.assets) {
+    if (group.totalSize > 0) {
+      return AppUtils.fileSizeFormat(group.totalSize);
+    } else {
+      for (var asset in group.assets) {
+        final orignalFile = await asset.assetEntity.originFile;
+        if (orignalFile != null) {
+          final length = await orignalFile.length();
+          asset.length = length;
+          asset.originalFilePath = orignalFile.path;
+          totalSize += length;
+        }
+      }
+      group.totalSize = totalSize;
+      return AppUtils.fileSizeFormat(totalSize);
+    }
+  }
+
+  Future<String?> _loadImageSize(ImageAsset asset) async {
+    if (asset.length > 0) {
+      return AppUtils.fileSizeFormat(asset.length);
+    } else {
       final orignalFile = await asset.assetEntity.originFile;
       if (orignalFile != null) {
         final length = await orignalFile.length();
         asset.length = length;
         asset.originalFilePath = orignalFile.path;
-        totalSize += length;
+        return AppUtils.fileSizeFormat(length);
+      } else {
+        return '0B';
       }
-    }
-    group.totalSize = totalSize;
-    return AppUtils.fileSizeFormat(totalSize);
-  }
-
-  Future<String?> _loadImageSize(ImageAsset asset) async {
-    final orignalFile = await asset.assetEntity.originFile;
-    if (orignalFile != null) {
-      final length = await orignalFile.length();
-      asset.length = length;
-      asset.originalFilePath = orignalFile.path;
-      return AppUtils.fileSizeFormat(length);
-    } else {
-      return '0B';
     }
   }
 }

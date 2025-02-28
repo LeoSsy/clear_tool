@@ -10,5 +10,5 @@
         "use_info_photo" : "Only used to read photos from the album"
     },
     "bestImage" : "best",
-    "noFilesClean" : "no files"
+    "noFilesClean" : "No files to clean"
 }

@@ -35,7 +35,7 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
   @override
   void initState() {
     super.initState();
-    screenshots = PhotoManagerTool.screenShotImageEntity;
+    screenshots = [...PhotoManagerTool.screenShotImageEntity];
   }
 
   allSelectedPhotos(bool isAllSel) {
@@ -59,6 +59,11 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
   @override
   void dispose() {
     allSelectedPhotos(false);
+    for (var asset in screenshots) {
+      asset.thumnailBytes = null;
+      asset.originBytes = null;
+      asset.originalFilePath = null;
+    }
     super.dispose();
   }
 
@@ -161,20 +166,6 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                               return GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
-                                  // 截取前后100张图片
-                                  // final id = assets.assetEntity.id;
-                                  // final start = max(index - 100, 0);
-                                  // final end =
-                                  //     min(index + 100, screenshots.length);
-                                  // final tempList =
-                                  //     screenshots.sublist(start, end);
-                                  // var preIndex = 0;
-                                  // for (var i = 0; i < tempList.length; i++) {
-                                  //   if (tempList[i].assetEntity.id == id) {
-                                  //     preIndex = i;
-                                  //     break;
-                                  //   }
-                                  // }
                                   AppUtils.showImagePreviewDialog(
                                     context,
                                     screenshots,
@@ -193,10 +184,8 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                                               height: imgW,
                                             )
                                           : FutureBuilder(
-                                              future: _loadImage(
-                                                  assets,
-                                                  imgW.toInt() * 5,
-                                                  imgW.toInt() * 5),
+                                              future:
+                                                  _loadImage(assets, 180, 180),
                                               builder: (context, snapshot) {
                                                 if (snapshot.connectionState ==
                                                     ConnectionState.done) {
@@ -243,8 +232,8 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
                                           assets.selected
                                               ? 'assets/images/common/selected_sel.png'
                                               : 'assets/images/common/selected_normal.png',
-                                              width: 30,
-                                              height: 30,
+                                          width: 30,
+                                          height: 30,
                                         ),
                                       ),
                                     ),
@@ -370,23 +359,31 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
   }
 
   Future<Uint8List?> _loadImage(ImageAsset asset, int imgW, int imgH) async {
-    final thumbnailData = await asset.assetEntity
-        .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
-    if (thumbnailData != null) {
-      asset.thumnailBytes = thumbnailData;
-      return thumbnailData;
+    if (asset.thumnailBytes != null) {
+      return asset.thumnailBytes;
     } else {
-      return null;
+      final thumbnailData = await asset.assetEntity
+          .thumbnailDataWithSize(ThumbnailSize(imgW, imgH));
+      if (thumbnailData != null) {
+        asset.thumnailBytes = thumbnailData;
+        return thumbnailData;
+      } else {
+        return null;
+      }
     }
   }
 
   Future<String?> _loadImageSize(ImageAsset asset) async {
-    final originFile = await asset.assetEntity.originFile;
-    if (originFile != null) {
-      asset.length = await originFile.length();
+    if (asset.length > 0) {
       return AppUtils.fileSizeFormat(asset.length);
     } else {
-      return '0KB';
+      final originFile = await asset.assetEntity.originFile;
+      if (originFile != null) {
+        asset.length = await originFile.length();
+        return AppUtils.fileSizeFormat(asset.length);
+      } else {
+        return '0KB';
+      }
     }
   }
 }
