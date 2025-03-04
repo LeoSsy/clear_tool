@@ -45,7 +45,7 @@ class _BigImagePageState extends State<BigImagePage> {
     totalSize = PhotoManagerTool.bigSumSize;
   }
 
-  allSelectedPhotos(bool isAllSel) {
+  allSelectedPhotos(bool isAllSel,{bool isDispose = false}) {
     if (isAllSel) {
       selPhotos = bigPhotos.map((e) {
         e.selected = true;
@@ -58,14 +58,14 @@ class _BigImagePageState extends State<BigImagePage> {
       }).toList();
       selPhotos = [];
     }
-    if (mounted) {
+    if (!isDispose && mounted) {
       setState(() {});
     }
   }
 
   @override
   void dispose() {
-    allSelectedPhotos(false);
+    allSelectedPhotos(false,isDispose: true);
     super.dispose();
   }
 

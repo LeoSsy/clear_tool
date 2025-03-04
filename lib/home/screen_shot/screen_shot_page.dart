@@ -40,7 +40,7 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
     screenshots = [...PhotoManagerTool.screenShotImageEntity];
   }
 
-  allSelectedPhotos(bool isAllSel) {
+  allSelectedPhotos(bool isAllSel,{bool isDispose = false}) {
     if (isAllSel) {
       selPhotos = screenshots.map((e) {
         e.selected = true;
@@ -53,14 +53,14 @@ class _ScreenShotPageState extends State<ScreenShotPage> {
       }).toList();
       selPhotos = [];
     }
-    if (mounted) {
+    if (!isDispose && mounted) {
       setState(() {});
     }
   }
 
   @override
   void dispose() {
-    allSelectedPhotos(false);
+    allSelectedPhotos(false,isDispose: true);
     super.dispose();
   }
 

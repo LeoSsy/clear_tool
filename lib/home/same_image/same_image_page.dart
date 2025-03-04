@@ -59,7 +59,7 @@ class _SameImagePageState extends State<SameImagePage> {
     }
   }
 
-  allSelectedPhotos(bool isAll) {
+  allSelectedPhotos(bool isAll,{bool isDispose = false}) {
     isAllSel = isAll;
     selPhotos = [];
     if (isAllSel) {
@@ -82,14 +82,14 @@ class _SameImagePageState extends State<SameImagePage> {
         }
       }
     }
-    if (context.mounted) {
+    if (!isDispose && mounted) {
       setState(() {});
     }
   }
 
   @override
   void dispose() {
-    allSelectedPhotos(false);
+    allSelectedPhotos(false,isDispose: true);
     super.dispose();
   }
 
